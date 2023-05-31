@@ -6,16 +6,16 @@ pub struct CenTreeNode<I, V> {
     inner: Link<I, V>,
 }
 
-pub type Link<I, V> = Option<Rc<RefCell<Node<I, V>>>>;
+type Link<I, V> = Option<Rc<RefCell<Node<I, V>>>>;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct InnerInfo<I, V> {
     value: V,
     interval: (I, I),
 }
 
 #[derive(PartialEq, Debug)]
-struct Node<I, V> {
+pub struct Node<I, V> {
     info: InnerInfo<I, V>,
     left: Link<I, V>,
     center: Link<I, V>,
@@ -31,7 +31,7 @@ where
         Self { inner: None }
     }
 
-    pub fn from_node(node: Link<I, V>) -> Self {
+    fn from_node(node: Link<I, V>) -> Self {
         match node {
             None => Self { inner: None },
             Some(n) => Self { inner: Some(n) },
@@ -71,7 +71,7 @@ where
         }
     }
 
-    pub fn remove(&self, info: InnerInfo<I, V>) {
+    pub fn remove(&self, _info: InnerInfo<I, V>) {
         todo!()
     }
 
@@ -79,13 +79,13 @@ where
         match &self.inner {
             None => 0,
             Some(root) => {
-                let mut left = Self::from_node(root.borrow_mut().left.clone());
+                let left = Self::from_node(root.borrow_mut().left.clone());
                 let left_height = left.height();
 
-                let mut center = Self::from_node(root.borrow_mut().center.clone());
+                let center = Self::from_node(root.borrow_mut().center.clone());
                 let center_height = center.height();
 
-                let mut right = Self::from_node(root.borrow_mut().right.clone());
+                let right = Self::from_node(root.borrow_mut().right.clone());
                 let right_height = right.height();
                 left_height.max(right_height).max(center_height) + 1
             }
@@ -132,6 +132,48 @@ where
                 result
             }
         }
+    }
+}
+
+pub struct CenTreeNodeIterator<I, V> {
+    stack: Vec<Link<I, V>>,
+}
+
+impl<I, V> Iterator for CenTreeNodeIterator<I, V>
+where
+    I: Clone,
+    V: Clone,
+{
+    type Item = InnerInfo<I, V>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(node) = self.stack.pop().flatten() {
+            let info = node.borrow().info.clone();
+
+            if let Some(right) = node.borrow().right.as_ref() {
+                self.stack.push(Some(Rc::clone(right)));
+            }
+            if let Some(center) = node.borrow().center.as_ref() {
+                self.stack.push(Some(Rc::clone(center)));
+            }
+            if let Some(left) = node.borrow().left.as_ref() {
+                self.stack.push(Some(Rc::clone(left)));
+            }
+
+            return Some(info);
+        }
+
+        None
+    }
+}
+
+impl<I, V> CenTreeNode<I, V> {
+    pub fn iter(&self) -> CenTreeNodeIterator<I, V> {
+        let mut stack = Vec::new();
+        if let Some(root) = self.inner.as_ref() {
+            stack.push(Some(Rc::clone(root)));
+        }
+        CenTreeNodeIterator { stack }
     }
 }
 
@@ -290,6 +332,58 @@ mod tests {
                     value: String::from("center")
                 }
             ]
+        );
+    }
+
+    #[test]
+    fn iter() {
+        let root1: CenTreeNode<i32, String> = CenTreeNode::new();
+
+        let mut iter = root1.iter();
+        assert_eq!(iter.next(), None);
+
+        let mut root2: CenTreeNode<i32, String> = CenTreeNode::new();
+        root2.add((1, 4), String::from("Node1"));
+        root2.add((-1, 0), String::from("Node2"));
+        root2.add((1, 3), String::from("Node3"));
+        root2.add((5, 9), String::from("Node5"));
+        root2.add((1, 2), String::from("Node4"));
+
+        let mut iter = root2.iter();
+        assert_eq!(
+            iter.next(),
+            Some(InnerInfo {
+                value: String::from("Node1"),
+                interval: (1, 4)
+            })
+        );
+        assert_eq!(
+            iter.next(),
+            Some(InnerInfo {
+                value: String::from("Node2"),
+                interval: (-1, 0)
+            })
+        );
+        assert_eq!(
+            iter.next(),
+            Some(InnerInfo {
+                value: String::from("Node3"),
+                interval: (1, 3)
+            })
+        );
+        assert_eq!(
+            iter.next(),
+            Some(InnerInfo {
+                value: String::from("Node4"),
+                interval: (1, 2)
+            })
+        );
+        assert_eq!(
+            iter.next(),
+            Some(InnerInfo {
+                value: String::from("Node5"),
+                interval: (5, 9)
+            })
         );
     }
 }
