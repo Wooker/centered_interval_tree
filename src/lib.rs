@@ -14,6 +14,16 @@ pub struct InnerInfo<I, V> {
     interval: (I, I),
 }
 
+impl<I, V> InnerInfo<I, V> {
+    pub fn interval(&self) -> &(I, I) {
+        &self.interval
+    }
+
+    pub fn value(&self) -> &V {
+        &self.value
+    }
+}
+
 #[derive(PartialEq, Debug)]
 pub struct Node<I, V> {
     info: InnerInfo<I, V>,
@@ -25,7 +35,7 @@ pub struct Node<I, V> {
 impl<I, V> CenTreeNode<I, V>
 where
     I: PartialOrd + Clone + Debug,
-    V: Clone,
+    V: Clone + Debug,
 {
     pub fn new() -> Self {
         Self { inner: None }
@@ -92,6 +102,31 @@ where
         }
     }
 
+    pub fn overlaps(&self) -> usize {
+        match &self.inner {
+            None => 0,
+            Some(root) => {
+                let inner_left = Self::from_node(root.borrow().left.clone());
+                let left_overlaps = inner_left.overlaps();
+
+                let inner_right = Self::from_node(root.borrow().right.clone());
+                let right_overlaps = inner_right.overlaps();
+
+                let max_left_right = left_overlaps.max(right_overlaps);
+
+                match &root.borrow().center {
+                    None => max_left_right,
+                    Some(center) => {
+                        let inner_center = Self::from_node(center.borrow().center.clone());
+                        let center_overlaps = inner_center.overlaps();
+
+                        max_left_right.max(center_overlaps) + 1
+                    }
+                }
+            }
+        }
+    }
+
     pub fn search(&self, point: I) -> Vec<InnerInfo<I, V>> {
         match &self.inner {
             None => vec![],
@@ -141,25 +176,32 @@ pub struct CenTreeNodeIterator<I, V> {
 
 impl<I, V> Iterator for CenTreeNodeIterator<I, V>
 where
-    I: Clone,
-    V: Clone,
+    I: Clone + Debug,
+    V: Clone + Debug,
 {
     type Item = InnerInfo<I, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        dbg!(&self.stack);
         while let Some(node) = self.stack.pop().flatten() {
             let info = node.borrow().info.clone();
 
             if let Some(right) = node.borrow().right.as_ref() {
+                println!("Adding right");
                 self.stack.push(Some(Rc::clone(right)));
             }
-            if let Some(center) = node.borrow().center.as_ref() {
-                self.stack.push(Some(Rc::clone(center)));
-            }
             if let Some(left) = node.borrow().left.as_ref() {
+                println!("Adding left");
                 self.stack.push(Some(Rc::clone(left)));
             }
 
+            if self.stack.last().is_none() {
+                if let Some(center) = node.borrow().center.as_ref() {
+                    self.stack.push(Some(Rc::clone(center)));
+                }
+            }
+
+            dbg!(&self.stack);
             return Some(info);
         }
 
@@ -170,9 +212,11 @@ where
 impl<I, V> CenTreeNode<I, V> {
     pub fn iter(&self) -> CenTreeNodeIterator<I, V> {
         let mut stack = Vec::new();
+
         if let Some(root) = self.inner.as_ref() {
             stack.push(Some(Rc::clone(root)));
         }
+
         CenTreeNodeIterator { stack }
     }
 }
@@ -348,6 +392,15 @@ mod tests {
         root2.add((1, 3), String::from("Node3"));
         root2.add((5, 9), String::from("Node5"));
         root2.add((1, 2), String::from("Node4"));
+        dbg!(&root2);
+
+        /*
+            (1, 4)
+            (-1, 0)
+            (5, 9)
+
+            (1, 3)
+        */
 
         let mut iter = root2.iter();
         assert_eq!(
@@ -378,12 +431,69 @@ mod tests {
                 interval: (1, 2)
             })
         );
+    }
+
+    use chrono::NaiveTime;
+
+    fn tree_iter_naive_time() {
+        let mut root: CenTreeNode<NaiveTime, String> = CenTreeNode::new();
+        root.add(
+            (
+                NaiveTime::from_hms_opt(12, 0, 0).unwrap(),
+                NaiveTime::from_hms_opt(14, 0, 0).unwrap(),
+            ),
+            String::from("First"),
+        );
+        root.add(
+            (
+                NaiveTime::from_hms_opt(15, 0, 0).unwrap(),
+                NaiveTime::from_hms_opt(18, 0, 0).unwrap(),
+            ),
+            String::from("Second"),
+        );
+
+        let mut iter = root.iter();
         assert_eq!(
             iter.next(),
             Some(InnerInfo {
-                value: String::from("Node5"),
-                interval: (5, 9)
+                interval: (
+                    NaiveTime::from_hms_opt(12, 0, 0).unwrap(),
+                    NaiveTime::from_hms_opt(14, 0, 0).unwrap(),
+                ),
+                value: String::from("First")
             })
         );
+
+        assert_eq!(
+            iter.next(),
+            Some(InnerInfo {
+                interval: (
+                    NaiveTime::from_hms_opt(15, 0, 0).unwrap(),
+                    NaiveTime::from_hms_opt(18, 0, 0).unwrap(),
+                ),
+                value: String::from("Second")
+            })
+        );
+    }
+
+    #[test]
+    fn overlaps() {
+        let mut root: CenTreeNode<i32, String> = CenTreeNode::new();
+        root.add((1, 2), String::from("Node1"));
+        root.add((3, 4), String::from("Node2"));
+        root.add((5, 6), String::from("Node3"));
+
+        root.add((1, 2), String::from("Node1"));
+        root.add((5, 6), String::from("Node3"));
+        root.add((7, 10), String::from("Node3"));
+
+        root.add((5, 10), String::from("Node3"));
+
+        root.add((6, 7), String::from("Node3"));
+
+        // dbg!(&root);
+
+        // assert_eq!(root.height(), 5);
+        assert_eq!(root.overlaps(), 3);
     }
 }
