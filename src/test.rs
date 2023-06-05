@@ -674,18 +674,21 @@ fn search() {
 }
 
 #[test]
-fn iter() {
-    let root1: CenteredIntervalTree<i32, String> = CenteredIntervalTree::new();
+fn iter_empty() {
+    let root1: CenteredIntervalTree<i32, ()> = CenteredIntervalTree::new();
 
     let mut iter = root1.iter();
     assert_eq!(iter.next(), None);
+}
 
-    let mut root2: CenteredIntervalTree<i32, String> = CenteredIntervalTree::new();
-    root2.add((1, 4), String::from("Node1"));
-    root2.add((-1, 0), String::from("Node2"));
-    root2.add((1, 3), String::from("Node3"));
-    root2.add((5, 9), String::from("Node5"));
-    root2.add((1, 2), String::from("Node4"));
+#[test]
+fn iter() {
+    let mut root2: CenteredIntervalTree<i32, ()> = CenteredIntervalTree::new();
+    root2.add((1, 4), ());
+    root2.add((-1, 0), ());
+    root2.add((1, 3), ());
+    root2.add((5, 9), ());
+    root2.add((1, 2), ());
 
     // (-1, 0) (1, 4) (5, 9)
     //         (1, 3)
@@ -696,7 +699,7 @@ fn iter() {
         iter.next(),
         Some((
             InnerInfo {
-                value: String::from("Node1"),
+                value: (),
                 interval: (1, 4)
             },
             0
@@ -706,27 +709,7 @@ fn iter() {
         iter.next(),
         Some((
             InnerInfo {
-                value: String::from("Node3"),
-                interval: (1, 3)
-            },
-            1
-        ))
-    );
-    assert_eq!(
-        iter.next(),
-        Some((
-            InnerInfo {
-                value: String::from("Node4"),
-                interval: (1, 2)
-            },
-            2
-        ))
-    );
-    assert_eq!(
-        iter.next(),
-        Some((
-            InnerInfo {
-                value: String::from("Node2"),
+                value: (),
                 interval: (-1, 0)
             },
             0
@@ -736,7 +719,27 @@ fn iter() {
         iter.next(),
         Some((
             InnerInfo {
-                value: String::from("Node5"),
+                value: (),
+                interval: (1, 3)
+            },
+            1
+        ))
+    );
+    assert_eq!(
+        iter.next(),
+        Some((
+            InnerInfo {
+                value: (),
+                interval: (1, 2)
+            },
+            2
+        ))
+    );
+    assert_eq!(
+        iter.next(),
+        Some((
+            InnerInfo {
+                value: (),
                 interval: (5, 9)
             },
             0

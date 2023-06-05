@@ -211,12 +211,11 @@ where
             if let Some(right) = node.as_ref().unwrap().borrow().right.as_ref() {
                 self.stack.push((Some(Rc::clone(right)), layer));
             }
-            if let Some(left) = node.as_ref().unwrap().borrow().left.as_ref() {
-                self.stack.push((Some(Rc::clone(left)), layer));
-            }
-
             if let Some(center) = node.as_ref().unwrap().borrow().center.as_ref() {
                 self.stack.push((Some(Rc::clone(center)), layer + 1));
+            }
+            if let Some(left) = node.as_ref().unwrap().borrow().left.as_ref() {
+                self.stack.push((Some(Rc::clone(left)), layer));
             }
 
             return Some((info, layer));
