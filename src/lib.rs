@@ -24,10 +24,11 @@ impl<I, V> InnerInfo<I, V> {
     }
 }
 
+// Should retain order given shuffled input
 #[derive(PartialEq, Debug)]
 pub struct Node<I, V> {
     info: InnerInfo<I, V>,
-    left: Link<I, V>,
+    parent: Link<I, V>,
     center: Link<I, V>,
     right: Link<I, V>,
 }
@@ -51,53 +52,42 @@ where
     pub fn add(&mut self, interval: (I, I), value: V) {
         assert!(interval.0 < interval.1);
 
+        let new_node = Rc::new(RefCell::new(Node {
+            info: InnerInfo {
+                value: value.clone(),
+                interval: interval.clone(),
+            },
+            parent: None,
+            center: None,
+            right: None,
+        }));
+
         if let Some(root) = self.inner.take() {
-            if interval.0 < root.borrow().info.interval.0
-                && interval.1 > root.borrow().info.interval.1
+            // Root overlps with new node
+            // OR
+            // New node's interval is strictly less than the root's interval
+            if interval.0 <= root.borrow().info.interval.0
+                && interval.1 >= root.borrow().info.interval.1
             {
-                self.inner = Some(Rc::new(RefCell::new(Node {
-                    info: InnerInfo {
-                        value: value.clone(),
-                        interval: interval.clone(),
-                    },
-                    left: None,
-                    center: Some(root),
-                    right: None,
-                })));
-                return;
+                dbg!(&root);
+                new_node.borrow_mut().parent = root.borrow().parent.clone();
+                new_node.borrow_mut().center = Some(root.clone());
+                root.borrow_mut().parent = Some(new_node.clone());
+
+                self.inner = Some(new_node);
+            } else if interval.0 < root.borrow().info.interval.0
+                && interval.1 < root.borrow().info.interval.0
+            {
+                new_node.borrow_mut().parent = root.borrow_mut().parent.take();
+                // root.borrow_mut().parent = Some(new_node.clone());
+                new_node.borrow_mut().right = Some(root.clone());
+
+                self.inner = Some(new_node);
             } else {
                 self.inner = Some(root);
             }
-        }
-
-        match &self.inner {
-            None => {
-                self.inner = Some(Rc::new(RefCell::new(Node {
-                    info: InnerInfo { value, interval },
-                    left: None,
-                    center: None,
-                    right: None,
-                })))
-            }
-            Some(root) => {
-                if interval.0 < root.borrow().info.interval.0
-                    && interval.1 < root.borrow().info.interval.0
-                {
-                    let mut left = Self::from_node(root.borrow_mut().left.clone());
-                    left.add(interval, value);
-                    root.borrow_mut().left = left.inner;
-                } else if interval.0 > root.borrow().info.interval.1
-                    && interval.1 > root.borrow().info.interval.1
-                {
-                    let mut right = Self::from_node(root.borrow_mut().right.clone());
-                    right.add(interval, value);
-                    root.borrow_mut().right = right.inner;
-                } else {
-                    let mut center = Self::from_node(root.borrow_mut().center.clone());
-                    center.add(interval, value);
-                    root.borrow_mut().center = center.inner;
-                }
-            }
+        } else {
+            self.inner = Some(new_node);
         }
     }
 
@@ -109,7 +99,7 @@ where
         match &self.inner {
             None => 0,
             Some(root) => {
-                let left = Self::from_node(root.borrow_mut().left.clone());
+                let left = Self::from_node(root.borrow_mut().parent.clone());
                 let left_height = left.height();
 
                 let center = Self::from_node(root.borrow_mut().center.clone());
@@ -126,7 +116,7 @@ where
         match &self.inner {
             None => 0,
             Some(root) => {
-                let inner_left = Self::from_node(root.borrow().left.clone());
+                let inner_left = Self::from_node(root.borrow().parent.clone());
                 let left_overlaps = inner_left.overlaps();
 
                 let inner_right = Self::from_node(root.borrow().right.clone());
@@ -154,7 +144,7 @@ where
                 if root.borrow().info.interval.0 > point
                     && root.borrow().info.interval.1 > point =>
             {
-                let left = Self::from_node(root.borrow().left.clone());
+                let left = Self::from_node(root.borrow().parent.clone());
                 let mut result = left.search(point);
 
                 result.push(InnerInfo {
@@ -208,7 +198,7 @@ where
             if let Some(right) = node.as_ref().unwrap().borrow().right.as_ref() {
                 self.stack.push((Some(Rc::clone(right)), layer));
             }
-            if let Some(left) = node.as_ref().unwrap().borrow().left.as_ref() {
+            if let Some(left) = node.as_ref().unwrap().borrow().parent.as_ref() {
                 self.stack.push((Some(Rc::clone(left)), layer));
             }
 
@@ -245,100 +235,111 @@ mod tests {
 
     #[test]
     fn create_and_add() {
-        let mut root: CenTreeNode<i32, String> = CenTreeNode::new();
-        root.add((1, 9), String::from("Hello"));
+        let mut root: CenTreeNode<i32, Option<i32>> = CenTreeNode::new();
+        assert_eq!(root.inner, None);
 
+        root.add((3, 6), None);
         assert_eq!(
             root.inner,
             Some(Rc::new(RefCell::new(Node {
                 info: InnerInfo {
-                    value: String::from("Hello"),
-                    interval: (1, 9)
+                    value: None,
+                    interval: (3, 6)
                 },
-                left: None,
+                parent: None,
                 center: None,
                 right: None
             })))
         );
 
-        root.add((-1, 0), String::from("left"));
-        root.add((5, 10), String::from("center"));
-        root.add((10, 11), String::from("right"));
-        root.add((5, 7), String::from("center2"));
-        root.add((10, 11), String::from("right2"));
-        root.add((5, 6), String::from("center3"));
-        root.add((5, 6), String::from("center4"));
+        root.add((1, 2), None);
+        assert_eq!(
+            root.inner,
+            Some(Rc::new(RefCell::new(Node {
+                info: InnerInfo {
+                    value: None,
+                    interval: (1, 2)
+                },
+                parent: None,
+                center: None,
+                right: Some(Rc::new(RefCell::new(Node {
+                    info: InnerInfo {
+                        value: None,
+                        interval: (3, 6)
+                    },
+                    parent: None,
+                    center: None,
+                    right: None
+                })))
+            })))
+        );
+
+        root.add((3, 4), None);
+        assert_eq!(
+            root.inner,
+            Some(Rc::new(RefCell::new(Node {
+                info: InnerInfo {
+                    value: None,
+                    interval: (3, 4)
+                },
+                parent: None,
+                center: None,
+                right: None
+            })))
+        );
+
+        root.add((3, 5), None);
+        assert_eq!(
+            root.inner,
+            Some(Rc::new(RefCell::new(Node {
+                info: InnerInfo {
+                    value: None,
+                    interval: (3, 4)
+                },
+                parent: None,
+                center: None,
+                right: None
+            })))
+        );
+
+        // root.add((-1, 0), None);
+        // root.add((5, 10), None);
+        // root.add((10, 11), None);
+        // root.add((5, 7), None);
+        // root.add((10, 11), None);
+        // root.add((5, 6), None);
+        // root.add((5, 6), None);
+        // root.add((5, 8), None);
+
+        // (-1, 0) (1,  9) (10, 11)
+        //         (5, 10) (10, 11)
+        //         (5,  8)
+        //         (5,  7)
+        //         (5, 6)
+        //         (5, 6)
 
         assert_eq!(
             root.inner,
             Some(Rc::new(RefCell::new(Node {
                 info: InnerInfo {
-                    value: String::from("Hello"),
-                    interval: (1, 9)
+                    value: None,
+                    interval: (-1, 0)
                 },
-                left: Some(Rc::new(RefCell::new(Node {
-                    info: InnerInfo {
-                        value: String::from("left"),
-                        interval: (-1, 0)
-                    },
-                    left: None,
-                    center: None,
-                    right: None
-                }))),
-                center: Some(Rc::new(RefCell::new(Node {
-                    info: InnerInfo {
-                        value: String::from("center"),
-                        interval: (5, 10)
-                    },
-                    left: None,
-                    center: Some(Rc::new(RefCell::new(Node {
-                        info: InnerInfo {
-                            value: String::from("center2"),
-                            interval: (5, 7)
-                        },
-                        left: None,
-                        center: Some(Rc::new(RefCell::new(Node {
-                            info: InnerInfo {
-                                value: String::from("center3"),
-                                interval: (5, 6)
-                            },
-                            left: None,
-                            center: Some(Rc::new(RefCell::new(Node {
-                                info: InnerInfo {
-                                    value: String::from("center4"),
-                                    interval: (5, 6)
-                                },
-                                left: None,
-                                center: None,
-                                right: None
-                            }))),
-                            right: None
-                        }))),
-                        right: None
-                    }))),
-                    right: None
-                }))),
+                parent: None,
+                center: None,
                 right: Some(Rc::new(RefCell::new(Node {
                     info: InnerInfo {
-                        value: String::from("right"),
-                        interval: (10, 11)
+                        value: None,
+                        interval: (1, 9)
                     },
-                    left: None,
-                    center: Some(Rc::new(RefCell::new(Node {
-                        info: InnerInfo {
-                            value: String::from("right2"),
-                            interval: (10, 11)
-                        },
-                        left: None,
-                        center: None,
-                        right: None
-                    }))),
+                    parent: None,
+                    center: None,
                     right: None,
-                }))),
+                })))
             })))
         );
 
-        assert_eq!(root.height(), 5);
+        // assert_eq!(root.height(), 5);
     }
 
     #[test]
@@ -353,7 +354,7 @@ mod tests {
                     value: String::from("Hello"),
                     interval: (1, 9)
                 },
-                left: None,
+                parent: None,
                 center: None,
                 right: None
             })))
@@ -551,20 +552,20 @@ mod tests {
                     interval: (0, 10),
                     value: String::from("Node3"),
                 },
-                left: None,
+                parent: None,
                 center: Some(Rc::new(RefCell::new(Node {
                     info: InnerInfo {
                         interval: (1, 2),
                         value: String::from("Node1"),
                     },
-                    left: None,
+                    parent: None,
                     center: None,
                     right: Some(Rc::new(RefCell::new(Node {
                         info: InnerInfo {
                             interval: (3, 4),
                             value: String::from("Node2"),
                         },
-                        left: None,
+                        parent: None,
                         center: None,
                         right: None,
                     }))),
