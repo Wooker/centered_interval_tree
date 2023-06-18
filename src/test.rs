@@ -624,7 +624,11 @@ fn add_right_then_bigger_0() {
 #[test]
 fn search() {
     let mut root: CenteredIntervalTree<i32, String> = CenteredIntervalTree::new();
+    assert_eq!(root.search(8).len(), 0);
+
     root.add((1, 9), String::from("Hello"));
+    assert_eq!(root.search(8).len(), 1);
+    assert_eq!(root.search(0).len(), 0);
 
     assert_eq!(
         root.inner,

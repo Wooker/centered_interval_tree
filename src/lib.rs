@@ -158,26 +158,14 @@ where
                     && root.borrow().info.interval.1 > point =>
             {
                 let left = Self::from_node(root.borrow().left.clone());
-                let mut result = left.search(point);
-
-                result.push(InnerInfo {
-                    interval: root.borrow().info.interval.clone(),
-                    value: root.borrow().info.value.clone(),
-                });
-                result
+                left.search(point)
             }
             Some(root)
                 if root.borrow().info.interval.0 < point
                     && root.borrow().info.interval.1 < point =>
             {
                 let right = Self::from_node(root.borrow().right.clone());
-                let mut result = right.search(point);
-
-                result.push(InnerInfo {
-                    interval: root.borrow().info.interval.clone(),
-                    value: root.borrow().info.value.clone(),
-                });
-                result
+                right.search(point)
             }
             Some(root) => {
                 let center = Self::from_node(root.borrow().center.clone());
@@ -187,6 +175,7 @@ where
                     interval: root.borrow().info.interval.clone(),
                     value: root.borrow().info.value.clone(),
                 });
+
                 result
             }
         }
