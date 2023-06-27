@@ -627,7 +627,8 @@ fn search() {
     assert_eq!(root.search(8).len(), 0);
 
     root.add((1, 9), String::from("Hello"));
-    assert_eq!(root.search(8).len(), 1);
+    assert_eq!(root.search(5).len(), 1);
+    assert_eq!(root.search(10).len(), 0);
     assert_eq!(root.search(0).len(), 0);
 
     assert_eq!(
@@ -644,39 +645,50 @@ fn search() {
     );
 
     root.add((-1, 0), String::from("left"));
-    root.add((5, 8), String::from("center"));
-    root.add((10, 11), String::from("right"));
+    root.add((5, 6), String::from("center"));
+    root.add((11, 12), String::from("right"));
 
-    let result = root.search(8);
-    assert_eq!(
-        result,
-        vec![
-            InnerInfo {
-                interval: (5, 8),
-                value: String::from("center")
-            },
-            InnerInfo {
-                interval: (1, 9),
-                value: String::from("Hello")
-            }
-        ]
-    );
+    root.add((-3, -2), String::from("left1"));
+    root.add((-1, 0), String::from("center1"));
+    root.add((1, 2), String::from("right1"));
 
-    assert_ne!(
-        result,
-        vec![
-            InnerInfo {
-                interval: (1, 9),
-                value: String::from("Hello")
-            },
-            InnerInfo {
-                interval: (5, 8),
-                value: String::from("center")
-            }
-        ]
-    );
+    root.add((3, 4), String::from("left2"));
+    root.add((5, 6), String::from("center2"));
+    root.add((7, 8), String::from("right2"));
+
+    root.add((9, 10), String::from("left3"));
+    root.add((11, 12), String::from("center3"));
+    root.add((13, 14), String::from("right3"));
+
+    assert_eq!(root.search(6).len(), 3);
+    assert_eq!(root.search(0).len(), 2);
+    assert_eq!(root.search(12).len(), 2);
+
+    assert_eq!(root.search(11).len(), 2);
+    assert_eq!(root.search(4).len(), 2);
+    assert_eq!(root.search(7).len(), 2);
+
+    assert_eq!(root.search(-2).len(), 1);
+    assert_eq!(root.search(13).len(), 1);
+
+    assert_eq!(root.search(-5).len(), 0);
+    assert_eq!(root.search(15).len(), 0);
 }
 
+#[test]
+fn search_() {
+    let mut root: CenteredIntervalTree<i32, ()> = CenteredIntervalTree::new();
+    assert_eq!(root.search(8).len(), 0);
+
+    root.add((3, 5), ());
+    root.add((4, 5), ());
+    root.add((1, 2), ());
+    root.add((11, 12), ());
+    root.add((5, 10), ());
+
+    dbg!(&root);
+    assert_eq!(root.search(4).len(), 2);
+}
 #[test]
 fn iter_empty() {
     let root1: CenteredIntervalTree<i32, ()> = CenteredIntervalTree::new();
