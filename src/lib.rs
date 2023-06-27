@@ -17,6 +17,10 @@ pub struct InnerInfo<I, V> {
     interval: (I, I),
 }
 
+struct Interval<I> {
+    b: Bound<I>,
+}
+
 impl<I, V> InnerInfo<I, V> {
     pub fn interval(&self) -> &(I, I) {
         &self.interval
@@ -24,6 +28,20 @@ impl<I, V> InnerInfo<I, V> {
 
     pub fn value(&self) -> &V {
         &self.value
+    }
+}
+
+impl<I, V> Display for InnerInfo<I, V>
+where
+    I: Display + Debug,
+    V: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "Value: {}\nInterval: {:?}\n",
+            self.value(),
+            self.interval()
+        ))
     }
 }
 
@@ -55,8 +73,8 @@ where
         assert!(interval.0 < interval.1);
 
         if let Some(root) = self.inner.take() {
-            if interval.0 < root.borrow().info.interval.0
-                && interval.1 > root.borrow().info.interval.1
+            if interval.0 <= root.borrow().info.interval.0
+                && interval.1 >= root.borrow().info.interval.1
             {
                 self.inner = Some(Rc::new(RefCell::new(Node {
                     info: InnerInfo {
@@ -84,21 +102,31 @@ where
             }
             Some(root) => {
                 if interval.0 < root.borrow().info.interval.0
-                    && interval.1 < root.borrow().info.interval.0
+                    && interval.1 <= root.borrow().info.interval.0
                 {
+                    println!("{:?} is less than root, left now", interval);
                     let mut left = Self::from_node(root.borrow_mut().left.clone());
                     left.add(interval, value);
                     root.borrow_mut().left = left.inner;
-                } else if interval.0 > root.borrow().info.interval.1
+                } else if interval.0 >= root.borrow().info.interval.1
                     && interval.1 > root.borrow().info.interval.1
                 {
+                    println!("{:?} is greater than root, right now", interval);
                     let mut right = Self::from_node(root.borrow_mut().right.clone());
                     right.add(interval, value);
                     root.borrow_mut().right = right.inner;
-                } else {
+                } else if interval.0 >= root.borrow().info.interval.0
+                    && interval.0 <= root.borrow().info.interval.1
+                    && interval.1 >= root.borrow().info.interval.0
+                    && interval.1 <= root.borrow().info.interval.1
+                {
+                    println!("{:?} overlaps the root, center now", interval);
                     let mut center = Self::from_node(root.borrow_mut().center.clone());
                     center.add(interval, value);
                     root.borrow_mut().center = center.inner;
+                } else {
+                    dbg!(&root);
+                    panic!("ADD: Unhandled case, {:?} in {:?}", (interval, value), root);
                 }
             }
         }
