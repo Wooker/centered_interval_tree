@@ -1,7 +1,20 @@
-use std::{cell::RefCell, fmt::Debug, rc::Rc};
+use std::{
+    cell::RefCell,
+    fmt::{Debug, Display},
+    ops::Bound,
+    rc::Rc,
+};
 
 #[cfg(test)]
 mod test;
+
+mod inner_info;
+
+mod interval;
+use interval::Interval;
+
+mod iterator;
+use iterator::CenTreeNodeIterator;
 
 /// Centered interval tree.
 #[derive(Debug)]
@@ -10,40 +23,6 @@ pub struct CenteredIntervalTree<I, V> {
 }
 
 type Link<I, V> = Option<Rc<RefCell<Node<I, V>>>>;
-
-#[derive(PartialEq, Debug, Clone)]
-pub struct InnerInfo<I, V> {
-    value: V,
-    interval: (I, I),
-}
-
-struct Interval<I> {
-    b: Bound<I>,
-}
-
-impl<I, V> InnerInfo<I, V> {
-    pub fn interval(&self) -> &(I, I) {
-        &self.interval
-    }
-
-    pub fn value(&self) -> &V {
-        &self.value
-    }
-}
-
-impl<I, V> Display for InnerInfo<I, V>
-where
-    I: Display + Debug,
-    V: Display,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!(
-            "Value: {}\nInterval: {:?}\n",
-            self.value(),
-            self.interval()
-        ))
-    }
-}
 
 #[derive(PartialEq, Debug)]
 pub struct Node<I, V> {
@@ -69,7 +48,7 @@ where
         }
     }
 
-    pub fn add(&mut self, interval: (I, I), value: V) {
+    pub fn add(&mut self, interval: Interval<I>, value: V) {
         assert!(interval.0 < interval.1);
 
         if let Some(root) = self.inner.take() {
@@ -104,14 +83,14 @@ where
                 if interval.0 < root.borrow().info.interval.0
                     && interval.1 <= root.borrow().info.interval.0
                 {
-                    println!("{:?} is less than root, left now", interval);
+                    // println!("{:?} is less than root, left now", interval);
                     let mut left = Self::from_node(root.borrow_mut().left.clone());
                     left.add(interval, value);
                     root.borrow_mut().left = left.inner;
                 } else if interval.0 >= root.borrow().info.interval.1
                     && interval.1 > root.borrow().info.interval.1
                 {
-                    println!("{:?} is greater than root, right now", interval);
+                    // println!("{:?} is greater than root, right now", interval);
                     let mut right = Self::from_node(root.borrow_mut().right.clone());
                     right.add(interval, value);
                     root.borrow_mut().right = right.inner;
@@ -120,12 +99,12 @@ where
                     && interval.1 >= root.borrow().info.interval.0
                     && interval.1 <= root.borrow().info.interval.1
                 {
-                    println!("{:?} overlaps the root, center now", interval);
+                    // println!("{:?} overlaps the root, center now", interval);
                     let mut center = Self::from_node(root.borrow_mut().center.clone());
                     center.add(interval, value);
                     root.borrow_mut().center = center.inner;
                 } else {
-                    dbg!(&root);
+                    // dbg!(&root);
                     panic!("ADD: Unhandled case, {:?} in {:?}", (interval, value), root);
                 }
             }
@@ -207,38 +186,6 @@ where
                 result
             }
         }
-    }
-}
-
-pub struct CenTreeNodeIterator<I, V> {
-    stack: Vec<(Link<I, V>, usize)>,
-}
-
-impl<I, V> Iterator for CenTreeNodeIterator<I, V>
-where
-    I: Clone + Debug,
-    V: Clone + Debug,
-{
-    type Item = (InnerInfo<I, V>, usize);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some((node, layer)) = self.stack.pop() {
-            let info = node.as_ref().unwrap().borrow().info.clone();
-
-            if let Some(right) = node.as_ref().unwrap().borrow().right.as_ref() {
-                self.stack.push((Some(Rc::clone(right)), layer));
-            }
-            if let Some(center) = node.as_ref().unwrap().borrow().center.as_ref() {
-                self.stack.push((Some(Rc::clone(center)), layer + 1));
-            }
-            if let Some(left) = node.as_ref().unwrap().borrow().left.as_ref() {
-                self.stack.push((Some(Rc::clone(left)), layer));
-            }
-
-            return Some((info, layer));
-        }
-
-        None
     }
 }
 
