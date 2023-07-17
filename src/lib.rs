@@ -3,10 +3,10 @@ use std::{cell::RefCell, fmt::Debug, rc::Rc};
 #[cfg(test)]
 mod test;
 
-mod inner_info;
+pub mod inner_info;
 use inner_info::InnerInfo;
 
-mod interval;
+pub mod interval;
 use interval::Interval;
 
 mod iterator;
@@ -47,26 +47,24 @@ where
     }
 
     pub fn add(&mut self, interval: Interval<I>, value: V) {
-        assert!(interval < interval);
-
         if let Some(root) = self.inner.take() {
-            match interval.compare_other(root.borrow().info.interval()) {
-                _ => {}
-            }
-            // if interval <= root.borrow().info.interval && interval >= root.borrow().info.interval {
-            //     self.inner = Some(Rc::new(RefCell::new(Node {
-            //         info: InnerInfo {
-            //             value: value.clone(),
-            //             interval: interval.clone(),
-            //         },
-            //         left: None,
-            //         center: Some(root),
-            //         right: None,
-            //     })));
-            //     return;
-            // } else {
-            //     self.inner = Some(root);
-            // }
+            match interval.compare_other(root.clone().borrow().info.interval()) {
+                OverlapOrdering::SubSet => {
+                    self.inner = Some(Rc::new(RefCell::new(Node {
+                        info: InnerInfo {
+                            value: value.clone(),
+                            interval: interval.clone(),
+                        },
+                        left: None,
+                        center: Some(root),
+                        right: None,
+                    })));
+                    return;
+                }
+                _ => {
+                    self.inner = Some(root);
+                }
+            };
         }
 
         match &self.inner {
@@ -79,35 +77,36 @@ where
                 })))
             }
             Some(root) => {
-                match interval.compare_other(root.borrow().info.interval()) {
-                    _ => (),
+                let mut root_mut = root.borrow_mut();
+                match interval.compare_other(root_mut.info.interval()) {
+                    OverlapOrdering::Less => {
+                        // println!("{:?} is less than root, left now", interval);
+                        let mut left = Self::from_node(root_mut.left.clone());
+                        left.add(interval, value);
+                        root_mut.left = left.inner;
+                    }
+                    OverlapOrdering::Greater => {
+                        // println!("{:?} is greater than root, right now", interval);
+                        let mut right = Self::from_node(root_mut.right.clone());
+                        right.add(interval, value);
+                        root_mut.right = right.inner;
+                    }
+                    OverlapOrdering::SuperSet
+                    | OverlapOrdering::OverlapLess
+                    | OverlapOrdering::OverlapEqualLess
+                    | OverlapOrdering::Equal
+                    | OverlapOrdering::OverlapGreater
+                    | OverlapOrdering::OverlapEqualGreater => {
+                        // println!("{:?} overlaps the root, center now", interval);
+                        let mut center = Self::from_node(root_mut.center.clone());
+                        center.add(interval, value);
+                        root_mut.center = center.inner;
+                    }
+                    _ => {
+                        // dbg!(&root);
+                        panic!("ADD: Unhandled case, {:?} in {:?}", (interval, value), root);
+                    }
                 }
-                // if interval < root.borrow().info.interval && interval <= root.borrow().info.interval
-                // {
-                //     // println!("{:?} is less than root, left now", interval);
-                //     let mut left = Self::from_node(root.borrow_mut().left.clone());
-                //     left.add(interval, value);
-                //     root.borrow_mut().left = left.inner;
-                // } else if interval >= root.borrow().info.interval
-                //     && interval > root.borrow().info.interval
-                // {
-                //     // println!("{:?} is greater than root, right now", interval);
-                //     let mut right = Self::from_node(root.borrow_mut().right.clone());
-                //     right.add(interval, value);
-                //     root.borrow_mut().right = right.inner;
-                // } else if interval >= root.borrow().info.interval
-                //     && interval <= root.borrow().info.interval
-                //     && interval >= root.borrow().info.interval
-                //     && interval <= root.borrow().info.interval
-                // {
-                //     // println!("{:?} overlaps the root, center now", interval);
-                //     let mut center = Self::from_node(root.borrow_mut().center.clone());
-                //     center.add(interval, value);
-                //     root.borrow_mut().center = center.inner;
-                // } else {
-                //     // dbg!(&root);
-                //     panic!("ADD: Unhandled case, {:?} in {:?}", (interval, value), root);
-                // }
             }
         }
     }

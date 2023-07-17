@@ -25,6 +25,14 @@ where
         Self { start: s, end: e }
     }
 
+    pub fn start(&self) -> &I {
+        &self.start
+    }
+
+    pub fn end(&self) -> &I {
+        &self.end
+    }
+
     pub fn compare_other(&self, other: &Self) -> OverlapOrdering {
         match (
             self.start.partial_cmp(&other.end),
@@ -93,7 +101,7 @@ where
 
     pub fn compare_point(&self, other: &I) -> OverlapOrdering {
         match self.start.partial_cmp(&other) {
-            Some(ord) => todo!(),
+            Some(_) => todo!(),
             None => OverlapOrdering::NoOverlap,
         }
     }
