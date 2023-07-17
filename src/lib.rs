@@ -1,20 +1,18 @@
-use std::{
-    cell::RefCell,
-    fmt::{Debug, Display},
-    ops::Bound,
-    rc::Rc,
-};
+use std::{cell::RefCell, fmt::Debug, rc::Rc};
 
 #[cfg(test)]
 mod test;
 
 mod inner_info;
+use inner_info::InnerInfo;
 
 mod interval;
 use interval::Interval;
 
 mod iterator;
 use iterator::CenTreeNodeIterator;
+
+use crate::interval::OverlapOrdering;
 
 /// Centered interval tree.
 #[derive(Debug)]
@@ -49,25 +47,26 @@ where
     }
 
     pub fn add(&mut self, interval: Interval<I>, value: V) {
-        assert!(interval.0 < interval.1);
+        assert!(interval < interval);
 
         if let Some(root) = self.inner.take() {
-            if interval.0 <= root.borrow().info.interval.0
-                && interval.1 >= root.borrow().info.interval.1
-            {
-                self.inner = Some(Rc::new(RefCell::new(Node {
-                    info: InnerInfo {
-                        value: value.clone(),
-                        interval: interval.clone(),
-                    },
-                    left: None,
-                    center: Some(root),
-                    right: None,
-                })));
-                return;
-            } else {
-                self.inner = Some(root);
+            match interval.compare_other(root.borrow().info.interval()) {
+                _ => {}
             }
+            // if interval <= root.borrow().info.interval && interval >= root.borrow().info.interval {
+            //     self.inner = Some(Rc::new(RefCell::new(Node {
+            //         info: InnerInfo {
+            //             value: value.clone(),
+            //             interval: interval.clone(),
+            //         },
+            //         left: None,
+            //         center: Some(root),
+            //         right: None,
+            //     })));
+            //     return;
+            // } else {
+            //     self.inner = Some(root);
+            // }
         }
 
         match &self.inner {
@@ -80,33 +79,35 @@ where
                 })))
             }
             Some(root) => {
-                if interval.0 < root.borrow().info.interval.0
-                    && interval.1 <= root.borrow().info.interval.0
-                {
-                    // println!("{:?} is less than root, left now", interval);
-                    let mut left = Self::from_node(root.borrow_mut().left.clone());
-                    left.add(interval, value);
-                    root.borrow_mut().left = left.inner;
-                } else if interval.0 >= root.borrow().info.interval.1
-                    && interval.1 > root.borrow().info.interval.1
-                {
-                    // println!("{:?} is greater than root, right now", interval);
-                    let mut right = Self::from_node(root.borrow_mut().right.clone());
-                    right.add(interval, value);
-                    root.borrow_mut().right = right.inner;
-                } else if interval.0 >= root.borrow().info.interval.0
-                    && interval.0 <= root.borrow().info.interval.1
-                    && interval.1 >= root.borrow().info.interval.0
-                    && interval.1 <= root.borrow().info.interval.1
-                {
-                    // println!("{:?} overlaps the root, center now", interval);
-                    let mut center = Self::from_node(root.borrow_mut().center.clone());
-                    center.add(interval, value);
-                    root.borrow_mut().center = center.inner;
-                } else {
-                    // dbg!(&root);
-                    panic!("ADD: Unhandled case, {:?} in {:?}", (interval, value), root);
+                match interval.compare_other(root.borrow().info.interval()) {
+                    _ => (),
                 }
+                // if interval < root.borrow().info.interval && interval <= root.borrow().info.interval
+                // {
+                //     // println!("{:?} is less than root, left now", interval);
+                //     let mut left = Self::from_node(root.borrow_mut().left.clone());
+                //     left.add(interval, value);
+                //     root.borrow_mut().left = left.inner;
+                // } else if interval >= root.borrow().info.interval
+                //     && interval > root.borrow().info.interval
+                // {
+                //     // println!("{:?} is greater than root, right now", interval);
+                //     let mut right = Self::from_node(root.borrow_mut().right.clone());
+                //     right.add(interval, value);
+                //     root.borrow_mut().right = right.inner;
+                // } else if interval >= root.borrow().info.interval
+                //     && interval <= root.borrow().info.interval
+                //     && interval >= root.borrow().info.interval
+                //     && interval <= root.borrow().info.interval
+                // {
+                //     // println!("{:?} overlaps the root, center now", interval);
+                //     let mut center = Self::from_node(root.borrow_mut().center.clone());
+                //     center.add(interval, value);
+                //     root.borrow_mut().center = center.inner;
+                // } else {
+                //     // dbg!(&root);
+                //     panic!("ADD: Unhandled case, {:?} in {:?}", (interval, value), root);
+                // }
             }
         }
     }
@@ -160,31 +161,30 @@ where
     pub fn search(&self, point: I) -> Vec<InnerInfo<I, V>> {
         match &self.inner {
             None => vec![],
-            Some(root)
-                if root.borrow().info.interval.0 > point
-                    && root.borrow().info.interval.1 > point =>
-            {
-                let left = Self::from_node(root.borrow().left.clone());
-                left.search(point)
-            }
-            Some(root)
-                if root.borrow().info.interval.0 < point
-                    && root.borrow().info.interval.1 < point =>
-            {
-                let right = Self::from_node(root.borrow().right.clone());
-                right.search(point)
-            }
-            Some(root) => {
-                let center = Self::from_node(root.borrow().center.clone());
-                let mut result = center.search(point);
+            Some(root) => match root.borrow().info.interval.compare_point(&point) {
+                _ => vec![],
+            }, //     if root.borrow().info.interval > point && root.borrow().info.interval > point =>
+               // {
+               //     let left = Self::from_node(root.borrow().left.clone());
+               //     left.search(point)
+               // }
+               // Some(root)
+               //     if root.borrow().info.interval < point && root.borrow().info.interval < point =>
+               // {
+               //     let right = Self::from_node(root.borrow().right.clone());
+               //     right.search(point)
+               // }
+               // Some(root) => {
+               //     let center = Self::from_node(root.borrow().center.clone());
+               //     let mut result = center.search(point);
 
-                result.push(InnerInfo {
-                    interval: root.borrow().info.interval.clone(),
-                    value: root.borrow().info.value.clone(),
-                });
+               //     result.push(InnerInfo {
+               //         interval: root.borrow().info.interval().clone(),
+               //         value: root.borrow().info.value().clone(),
+               //     });
 
-                result
-            }
+               //     result
+               // }
         }
     }
 }

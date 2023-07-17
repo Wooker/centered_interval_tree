@@ -1,8 +1,8 @@
-use crate::{InnerInfo, Link};
+use crate::{inner_info::InnerInfo, Link};
 use std::{fmt::Debug, rc::Rc};
 
 pub struct CenTreeNodeIterator<I, V> {
-    stack: Vec<(Link<I, V>, usize)>,
+    pub(crate) stack: Vec<(Link<I, V>, usize)>,
 }
 
 impl<I, V> Iterator for CenTreeNodeIterator<I, V>

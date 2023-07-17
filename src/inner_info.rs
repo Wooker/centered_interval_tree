@@ -4,8 +4,8 @@ use crate::interval::Interval;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct InnerInfo<I, V> {
-    value: V,
-    interval: Interval<I>,
+    pub(crate) value: V,
+    pub(crate) interval: Interval<I>,
 }
 
 impl<I, V> InnerInfo<I, V> {
