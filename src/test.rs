@@ -686,7 +686,7 @@ fn search_() {
     root.add((11, 12), ());
     root.add((5, 10), ());
 
-    dbg!(&root);
+    // dbg!(&root);
     assert_eq!(root.search(4).len(), 2);
 }
 #[test]

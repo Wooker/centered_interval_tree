@@ -1,4 +1,4 @@
-use crate::{inner_info::InnerInfo, Link};
+use crate::{inner_info::InnerInfo, CenteredIntervalTree, Link};
 use std::{fmt::Debug, rc::Rc};
 
 pub struct CenTreeNodeIterator<I, V> {
@@ -18,6 +18,7 @@ where
 
             if let Some(right) = node.as_ref().unwrap().borrow().right.as_ref() {
                 self.stack.push((Some(Rc::clone(right)), layer, false));
+                // if CenteredIntervalTree::from_node(Some(right)).search(info.interval())
             }
             if let Some(center) = node.as_ref().unwrap().borrow().center.as_ref() {
                 has_overlaps = true;

@@ -78,7 +78,7 @@ where
             }
             Some(root) => {
                 let mut root_mut = root.borrow_mut();
-                match interval.compare_other(root_mut.info.interval()) {
+                match root_mut.info.interval().compare_other(&interval) {
                     OverlapOrdering::Less => {
                         // println!("{:?} is less than root, left now", interval);
                         let mut left = Self::from_node(root_mut.left.clone());
@@ -91,7 +91,7 @@ where
                         right.add(interval, value);
                         root_mut.right = right.inner;
                     }
-                    OverlapOrdering::SuperSet
+                    OverlapOrdering::SubSet
                     | OverlapOrdering::OverlapLess
                     | OverlapOrdering::OverlapEqualLess
                     | OverlapOrdering::Equal

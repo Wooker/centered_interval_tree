@@ -8,7 +8,7 @@ pub enum OverlapOrdering {
     OverlapGreater,      // (2, 4) in relation to (1, 3)
     OverlapEqualGreater, // (3, 4) in relation to (1, 3)
     Equal,               // (1, 2) (1, 2)
-    NoOverlap,
+    NotPossible,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
@@ -38,71 +38,85 @@ where
             self.start.partial_cmp(&other.end),
             self.end.partial_cmp(&other.start),
         ) {
-            (None, None) => OverlapOrdering::NoOverlap,
-            (None, Some(_)) => OverlapOrdering::NoOverlap,
-            (Some(_), None) => OverlapOrdering::NoOverlap,
-            (Some(se), Some(es)) => match (se, es) {
-                (std::cmp::Ordering::Less, std::cmp::Ordering::Less) => OverlapOrdering::Less,
-                (std::cmp::Ordering::Equal, std::cmp::Ordering::Greater) => {
-                    OverlapOrdering::OverlapEqualLess
-                }
-                (std::cmp::Ordering::Equal, std::cmp::Ordering::Equal) => OverlapOrdering::Equal,
-                (std::cmp::Ordering::Less, std::cmp::Ordering::Equal) => {
-                    OverlapOrdering::OverlapEqualGreater
-                }
-                (std::cmp::Ordering::Greater, std::cmp::Ordering::Greater) => {
-                    OverlapOrdering::Greater
-                }
-                // SuperSet or SubSet
-                (std::cmp::Ordering::Less, std::cmp::Ordering::Greater) => {
-                    match (
-                        self.start.partial_cmp(&other.start),
-                        self.end.partial_cmp(&other.end),
-                    ) {
-                        (None, None) => OverlapOrdering::NoOverlap,
-                        (None, Some(_)) => OverlapOrdering::NoOverlap,
-                        (Some(_), None) => OverlapOrdering::NoOverlap,
-                        (Some(ss), Some(ee)) => match (ss, ee) {
-                            (std::cmp::Ordering::Less, std::cmp::Ordering::Equal) => {
-                                OverlapOrdering::SuperSet
+            (None, None) => OverlapOrdering::NotPossible,
+            (None, Some(_)) => OverlapOrdering::NotPossible,
+            (Some(_), None) => OverlapOrdering::NotPossible,
+            (Some(se), Some(es)) => {
+                // dbg!("Cross-Comparison is Some");
+                match (se, es) {
+                    (std::cmp::Ordering::Less, std::cmp::Ordering::Less) => {
+                        OverlapOrdering::Greater
+                    }
+                    (std::cmp::Ordering::Equal, std::cmp::Ordering::Greater) => {
+                        OverlapOrdering::OverlapEqualLess
+                    }
+                    (std::cmp::Ordering::Equal, std::cmp::Ordering::Equal) => {
+                        OverlapOrdering::Equal
+                    }
+                    (std::cmp::Ordering::Less, std::cmp::Ordering::Equal) => {
+                        OverlapOrdering::OverlapEqualGreater
+                    }
+                    (std::cmp::Ordering::Greater, std::cmp::Ordering::Greater) => {
+                        OverlapOrdering::Less
+                    }
+                    // SuperSet or SubSet
+                    (std::cmp::Ordering::Less, std::cmp::Ordering::Greater) => {
+                        match (
+                            self.start.partial_cmp(&other.start),
+                            self.end.partial_cmp(&other.end),
+                        ) {
+                            (None, None) => OverlapOrdering::NotPossible,
+                            (None, Some(_)) => OverlapOrdering::NotPossible,
+                            (Some(_), None) => OverlapOrdering::NotPossible,
+                            (Some(ss), Some(ee)) => {
+                                // dbg!("Direct-Comparison is Some");
+                                // dbg!(&ss);
+                                // dbg!(&ee);
+                                match (ss, ee) {
+                                    (std::cmp::Ordering::Less, std::cmp::Ordering::Equal) => {
+                                        OverlapOrdering::SuperSet
+                                    }
+                                    (std::cmp::Ordering::Less, std::cmp::Ordering::Greater) => {
+                                        OverlapOrdering::OverlapGreater
+                                    }
+                                    (std::cmp::Ordering::Equal, std::cmp::Ordering::Greater) => {
+                                        OverlapOrdering::SuperSet
+                                    }
+                                    (std::cmp::Ordering::Equal, std::cmp::Ordering::Less) => {
+                                        OverlapOrdering::SuperSet
+                                    }
+                                    (std::cmp::Ordering::Equal, std::cmp::Ordering::Equal) => {
+                                        OverlapOrdering::Equal
+                                    }
+                                    (std::cmp::Ordering::Greater, std::cmp::Ordering::Less) => {
+                                        OverlapOrdering::SuperSet
+                                    }
+                                    (std::cmp::Ordering::Greater, std::cmp::Ordering::Equal) => {
+                                        OverlapOrdering::SubSet
+                                    }
+                                    (std::cmp::Ordering::Greater, std::cmp::Ordering::Greater) => {
+                                        OverlapOrdering::OverlapLess
+                                    }
+                                    (std::cmp::Ordering::Less, std::cmp::Ordering::Less) => {
+                                        OverlapOrdering::OverlapGreater
+                                    }
+                                }
                             }
-                            (std::cmp::Ordering::Less, std::cmp::Ordering::Greater) => {
-                                OverlapOrdering::SuperSet
-                            }
-                            (std::cmp::Ordering::Equal, std::cmp::Ordering::Greater) => {
-                                OverlapOrdering::SuperSet
-                            }
-                            (std::cmp::Ordering::Equal, std::cmp::Ordering::Less) => {
-                                OverlapOrdering::SuperSet
-                            }
-                            (std::cmp::Ordering::Equal, std::cmp::Ordering::Equal) => {
-                                OverlapOrdering::Equal
-                            }
-                            (std::cmp::Ordering::Greater, std::cmp::Ordering::Less) => {
-                                OverlapOrdering::SubSet
-                            }
-                            (std::cmp::Ordering::Greater, std::cmp::Ordering::Equal) => {
-                                OverlapOrdering::SubSet
-                            }
-                            _ => {
-                                println!("Should have matched before");
-                                OverlapOrdering::NoOverlap
-                            }
-                        },
+                        }
+                    }
+                    _ => {
+                        println!("Not possible");
+                        OverlapOrdering::NotPossible
                     }
                 }
-                _ => {
-                    println!("Not possible");
-                    OverlapOrdering::NoOverlap
-                }
-            },
+            }
         }
     }
 
     pub fn compare_point(&self, other: &I) -> OverlapOrdering {
         match self.start.partial_cmp(&other) {
             Some(_) => todo!(),
-            None => OverlapOrdering::NoOverlap,
+            None => OverlapOrdering::NotPossible,
         }
     }
 }
