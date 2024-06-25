@@ -17,17 +17,17 @@ use crate::interval::OverlapOrdering;
 /// Centered interval tree.
 #[derive(Debug)]
 pub struct CenteredIntervalTree<I, V> {
-    inner: Link<I, V>,
+    pub inner: Link<I, V>,
 }
 
 type Link<I, V> = Option<Rc<RefCell<Node<I, V>>>>;
 
 #[derive(PartialEq, Debug)]
 pub struct Node<I, V> {
-    info: InnerInfo<I, V>,
-    left: Link<I, V>,
-    center: Link<I, V>,
-    right: Link<I, V>,
+    pub info: InnerInfo<I, V>,
+    pub left: Link<I, V>,
+    pub center: Link<I, V>,
+    pub right: Link<I, V>,
 }
 
 impl<I, V> CenteredIntervalTree<I, V>
@@ -103,8 +103,11 @@ where
                         root_mut.center = center.inner;
                     }
                     _ => {
-                        // dbg!(&root);
-                        panic!("ADD: Unhandled case, {:?} in {:?}", (interval, value), root);
+                        panic!(
+                            "ADD: Unhandled case, {:?} to {:?}",
+                            (interval, value),
+                            self.inner
+                        );
                     }
                 }
             }

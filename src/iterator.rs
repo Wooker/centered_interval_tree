@@ -1,4 +1,4 @@
-use crate::{inner_info::InnerInfo, CenteredIntervalTree, Link};
+use crate::{inner_info::InnerInfo, Link};
 use std::{fmt::Debug, rc::Rc};
 
 pub struct CenTreeNodeIterator<I, V> {

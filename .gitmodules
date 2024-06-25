@@ -1,0 +1,6 @@
+[submodule "comparable_bound"]
+	path = comparable_bound
+	url = https://github.com/wooker/comparable_bound.git
+[submodule "intervals"]
+	path = intervals
+	url = https://github.com/wooker/interval.git
