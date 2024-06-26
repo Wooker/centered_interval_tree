@@ -1,14 +1,22 @@
 pub enum OverlapOrdering {
-    SuperSet,            // (1, 4) in relation to (2, 3)
-    SubSet,              // (2, 3) in relation to (1, 4)
-    Less,                // (1, 2) in relation to (3, 4)
-    OverlapLess,         // (1, 3) in relation to (2, 4)
-    OverlapEqualLess,    // (1, 2) in relation to (2, 4)
-    Greater,             // (3, 4) in relation to (1, 2)
-    OverlapGreater,      // (2, 4) in relation to (1, 3)
-    OverlapEqualGreater, // (3, 4) in relation to (1, 3)
-    Equal,               // (1, 2) (1, 2)
+    SuperSet,            // [1, 4] in relation to [2, 3]
+    SubSet,              // [2, 3] in relation to [1, 4]
+    Less,                // [1, 2] in relation to [3, 4]
+    OverlapLess,         // [1, 3] in relation to [2, 4]
+    OverlapEqualLess,    // [1, 2] in relation to [2, 4]
+    Greater,             // [3, 4] in relation to [1, 2]
+    OverlapGreater,      // [2, 4] in relation to [1, 3]
+    OverlapEqualGreater, // [3, 4] in relation to [1, 3]
+    Equal,               // [1, 2] [1, 2]
     NotPossible,
+}
+
+#[allow(unused)]
+macro_rules! interval {
+    // Match an interval of the form [start, end]
+    ([$start:expr, $end:expr]) => {{
+        Interval::new($start, $end)
+    }};
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]

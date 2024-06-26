@@ -1,6 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use crate::InnerInfo;
+use crate::Interval;
 
 use super::{CenteredIntervalTree, Node};
 
@@ -15,7 +16,7 @@ fn create_empty() {
 #[test]
 fn add_root_0() {
     let mut root: CenteredIntervalTree<i32, ()> = CenteredIntervalTree::new();
-    root.add((0, 9), ());
+    root.add(interval!([0, 9]), ());
 
     assert_eq!(root.height(), 1);
     assert_eq!(root.overlaps(), 0);
@@ -24,7 +25,7 @@ fn add_root_0() {
         Some(Rc::new(RefCell::new(Node {
             info: InnerInfo {
                 value: (),
-                interval: (0, 9)
+                interval: interval!([0, 9]),
             },
             left: None,
             center: None,
