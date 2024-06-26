@@ -7,10 +7,10 @@ pub type Link<I, V> = Option<Rc<RefCell<Node<I, V>>>>;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Node<I, V> {
-    pub(crate) info: InnerInfo<I, V>,
-    pub(crate) left: Link<I, V>,
-    pub(crate) center: Link<I, V>,
-    pub(crate) right: Link<I, V>,
+    pub info: InnerInfo<I, V>,
+    pub left: Link<I, V>,
+    pub center: Link<I, V>,
+    pub right: Link<I, V>,
 }
 
 #[allow(unused)]
