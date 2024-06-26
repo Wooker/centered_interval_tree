@@ -1,9 +1,11 @@
 #[macro_use]
 pub mod interval;
-mod centered_interval_tree;
 pub mod inner_info;
-mod iterator;
-mod node;
+pub mod iterator;
+pub mod node;
+
+mod centered_interval_tree;
+pub use centered_interval_tree::CenteredIntervalTree;
 
 #[cfg(test)]
 mod test;
