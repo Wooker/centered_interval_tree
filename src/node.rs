@@ -1,17 +1,19 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use crate::inner_info::InnerInfo;
-use crate::Link;
+
+pub type Link<I, V> = Option<Rc<RefCell<Node<I, V>>>>;
 
 #[derive(PartialEq, Debug, Clone)]
-pub struct Node<I, V>
-where
-    I: PartialOrd,
-{
+pub struct Node<I, V> {
     pub(crate) info: InnerInfo<I, V>,
     pub(crate) left: Link<I, V>,
     pub(crate) center: Link<I, V>,
     pub(crate) right: Link<I, V>,
 }
 
+#[allow(unused)]
 impl<I, V> Node<I, V>
 where
     I: PartialOrd,
