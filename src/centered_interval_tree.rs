@@ -48,15 +48,7 @@ where
         if let Some(root) = self.inner.take() {
             match interval.compare_other(root.clone().borrow().info.interval()) {
                 OverlapOrdering::SubSet => {
-                    self.inner = Some(Rc::new(RefCell::new(Node {
-                        info: InnerInfo {
-                            value: value.clone(),
-                            interval: interval.clone(),
-                        },
-                        left: None,
-                        center: Some(root),
-                        right: None,
-                    })));
+                    self.inner = node!(value.clone(), interval.clone(), None, Some(root), None);
                     return;
                 }
                 _ => {
@@ -67,12 +59,7 @@ where
 
         match &self.inner {
             None => {
-                self.inner = Some(Rc::new(RefCell::new(Node {
-                    info: InnerInfo { value, interval },
-                    left: None,
-                    center: None,
-                    right: None,
-                })))
+                self.inner = node!(value, interval, None, None, None);
             }
             Some(root) => {
                 let mut root_mut = root.borrow_mut();
@@ -95,14 +82,12 @@ where
                     | OverlapOrdering::Equal
                     | OverlapOrdering::OverlapGreater
                     | OverlapOrdering::OverlapEqualGreater => {
-                        // println!("{:?} overlaps the root, center now", interval);
                         let mut center = Self::from_node(root_mut.center.clone());
                         center.add(interval, value);
                         root_mut.center = center.inner;
                     }
-                    _ => {
-                        panic!("ADD: Unhandled case",);
-                    }
+                    OverlapOrdering::SuperSet => {}
+                    OverlapOrdering::NotPossible => panic!("Intervals are not defined"),
                 }
             }
         }
