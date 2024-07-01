@@ -7,6 +7,20 @@ use crate::{
     node::{Link, Node},
 };
 
+macro_rules! node {
+    ($val:expr, $int:expr, $left:expr, $center:expr, $right:expr) => {{
+        Some(Rc::new(RefCell::new(Node {
+            info: InnerInfo {
+                value: $val,
+                interval: $int,
+            },
+            left: $left,
+            center: $center,
+            right: $right,
+        })))
+    }};
+}
+
 /// Centered interval tree.
 #[derive(Debug)]
 pub struct CenteredIntervalTree<I, V> {

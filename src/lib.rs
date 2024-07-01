@@ -4,6 +4,7 @@ pub mod inner_info;
 pub mod iterator;
 pub mod node;
 
+#[macro_use]
 mod centered_interval_tree;
 pub use centered_interval_tree::CenteredIntervalTree;
 
