@@ -37,7 +37,7 @@ where
         Self { inner: None }
     }
 
-    fn from_node(node: Link<I, V>) -> Self {
+    pub fn from_node(node: Link<I, V>) -> Self {
         match node {
             None => Self { inner: None },
             Some(n) => Self { inner: Some(n) },
