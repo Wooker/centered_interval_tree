@@ -1,7 +1,10 @@
 use crate::{inner_info::InnerInfo, node::Link};
 use std::{fmt::Debug, rc::Rc};
 
-pub struct CenTreeNodeIterator<I, V> {
+pub struct CenTreeNodeIterator<I, V>
+where
+    I: std::fmt::Debug,
+{
     pub(crate) stack: Vec<(Link<I, V>, usize, bool)>,
 }
 

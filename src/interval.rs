@@ -1,3 +1,6 @@
+use std::{fmt::Display, ops::Add};
+
+#[derive(Debug)]
 pub enum OverlapOrdering {
     SuperSet,            // [1, 4] in relation to [2, 3]
     SubSet,              // [2, 3] in relation to [1, 4]
@@ -19,15 +22,27 @@ macro_rules! interval {
     }};
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
-pub struct Interval<I> {
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+pub struct Interval<I>
+where
+    I: std::fmt::Debug,
+{
     start: I,
     end: I,
 }
 
+impl<I> Display for Interval<I>
+where
+    I: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("[{:?}, {:?}]", self.start, self.end))
+    }
+}
+
 impl<I> Interval<I>
 where
-    I: PartialEq + PartialOrd,
+    I: PartialEq + PartialOrd + std::fmt::Debug,
 {
     pub fn new(s: I, e: I) -> Self {
         Self { start: s, end: e }
@@ -41,8 +56,8 @@ where
         &self.end
     }
 
-    pub fn compare_other(&self, other: &Self) -> OverlapOrdering {
-        match (
+    pub fn compared_to(&self, other: &Self) -> OverlapOrdering {
+        let ordering = match (
             self.start.partial_cmp(&other.end),
             self.end.partial_cmp(&other.start),
         ) {
@@ -50,7 +65,6 @@ where
             (None, Some(_)) => OverlapOrdering::NotPossible,
             (Some(_), None) => OverlapOrdering::NotPossible,
             (Some(se), Some(es)) => {
-                // dbg!("Cross-Comparison is Some");
                 match (se, es) {
                     (std::cmp::Ordering::Less, std::cmp::Ordering::Less) => {
                         OverlapOrdering::Greater
@@ -76,40 +90,35 @@ where
                             (None, None) => OverlapOrdering::NotPossible,
                             (None, Some(_)) => OverlapOrdering::NotPossible,
                             (Some(_), None) => OverlapOrdering::NotPossible,
-                            (Some(ss), Some(ee)) => {
-                                // dbg!("Direct-Comparison is Some");
-                                // dbg!(&ss);
-                                // dbg!(&ee);
-                                match (ss, ee) {
-                                    (std::cmp::Ordering::Less, std::cmp::Ordering::Equal) => {
-                                        OverlapOrdering::SuperSet
-                                    }
-                                    (std::cmp::Ordering::Less, std::cmp::Ordering::Greater) => {
-                                        OverlapOrdering::OverlapGreater
-                                    }
-                                    (std::cmp::Ordering::Equal, std::cmp::Ordering::Greater) => {
-                                        OverlapOrdering::SuperSet
-                                    }
-                                    (std::cmp::Ordering::Equal, std::cmp::Ordering::Less) => {
-                                        OverlapOrdering::SuperSet
-                                    }
-                                    (std::cmp::Ordering::Equal, std::cmp::Ordering::Equal) => {
-                                        OverlapOrdering::Equal
-                                    }
-                                    (std::cmp::Ordering::Greater, std::cmp::Ordering::Less) => {
-                                        OverlapOrdering::SuperSet
-                                    }
-                                    (std::cmp::Ordering::Greater, std::cmp::Ordering::Equal) => {
-                                        OverlapOrdering::SubSet
-                                    }
-                                    (std::cmp::Ordering::Greater, std::cmp::Ordering::Greater) => {
-                                        OverlapOrdering::OverlapLess
-                                    }
-                                    (std::cmp::Ordering::Less, std::cmp::Ordering::Less) => {
-                                        OverlapOrdering::OverlapGreater
-                                    }
+                            (Some(ss), Some(ee)) => match (ss, ee) {
+                                (std::cmp::Ordering::Less, std::cmp::Ordering::Equal) => {
+                                    OverlapOrdering::SuperSet
                                 }
-                            }
+                                (std::cmp::Ordering::Less, std::cmp::Ordering::Greater) => {
+                                    OverlapOrdering::OverlapGreater
+                                }
+                                (std::cmp::Ordering::Equal, std::cmp::Ordering::Greater) => {
+                                    OverlapOrdering::SuperSet
+                                }
+                                (std::cmp::Ordering::Equal, std::cmp::Ordering::Less) => {
+                                    OverlapOrdering::SuperSet
+                                }
+                                (std::cmp::Ordering::Equal, std::cmp::Ordering::Equal) => {
+                                    OverlapOrdering::Equal
+                                }
+                                (std::cmp::Ordering::Greater, std::cmp::Ordering::Less) => {
+                                    OverlapOrdering::SuperSet
+                                }
+                                (std::cmp::Ordering::Greater, std::cmp::Ordering::Equal) => {
+                                    OverlapOrdering::SubSet
+                                }
+                                (std::cmp::Ordering::Greater, std::cmp::Ordering::Greater) => {
+                                    OverlapOrdering::OverlapLess
+                                }
+                                (std::cmp::Ordering::Less, std::cmp::Ordering::Less) => {
+                                    OverlapOrdering::OverlapGreater
+                                }
+                            },
                         }
                     }
                     _ => {
@@ -118,7 +127,9 @@ where
                     }
                 }
             }
-        }
+        };
+
+        ordering
     }
 
     pub fn compare_point(&self, other: &I) -> OverlapOrdering {
@@ -126,5 +137,30 @@ where
             Some(_) => todo!(),
             None => OverlapOrdering::NotPossible,
         }
+    }
+}
+
+impl<I> Add<Interval<I>> for Interval<I>
+where
+    I: std::fmt::Debug + PartialOrd,
+{
+    type Output = Self;
+
+    fn add(self, rhs: Interval<I>) -> Self::Output {
+        println!("{}", self);
+        println!("{}", rhs);
+
+        let start = (self.start > rhs.start)
+            .then(|| rhs.start)
+            .or(Some(self.start))
+            .unwrap();
+        let end = (self.end < rhs.end)
+            .then(|| rhs.end)
+            .or(Some(self.end))
+            .unwrap();
+
+        let int = interval!([start, end]);
+        dbg!(&int);
+        int
     }
 }

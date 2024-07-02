@@ -12,6 +12,7 @@ macro_rules! node {
         Some(Rc::new(RefCell::new(Node {
             info: InnerInfo {
                 value: $val,
+                full_interval: $int.clone(),
                 interval: $int,
             },
             left: $left,
@@ -23,14 +24,17 @@ macro_rules! node {
 
 /// Centered interval tree.
 #[derive(Debug)]
-pub struct CenteredIntervalTree<I, V> {
+pub struct CenteredIntervalTree<I, V>
+where
+    I: std::fmt::Debug,
+{
     pub inner: Link<I, V>,
 }
 
 #[allow(unused)]
 impl<I, V> CenteredIntervalTree<I, V>
 where
-    I: PartialOrd + Clone,
+    I: PartialOrd + Clone + std::fmt::Debug,
     V: Clone,
 {
     pub fn new() -> Self {
@@ -46,7 +50,7 @@ where
 
     pub fn add(&mut self, interval: Interval<I>, value: V) {
         if let Some(root) = self.inner.take() {
-            match interval.compare_other(root.clone().borrow().info.interval()) {
+            match interval.compared_to(root.clone().borrow().info.interval()) {
                 OverlapOrdering::SubSet => {
                     self.inner = node!(value.clone(), interval.clone(), None, Some(root), None);
                     return;
@@ -63,15 +67,13 @@ where
             }
             Some(root) => {
                 let mut root_mut = root.borrow_mut();
-                match root_mut.info.interval().compare_other(&interval) {
+                match root_mut.info.interval().compared_to(&interval) {
                     OverlapOrdering::Less => {
-                        // println!("{:?} is less than root, left now", interval);
                         let mut left = Self::from_node(root_mut.left.clone());
                         left.add(interval, value);
                         root_mut.left = left.inner;
                     }
                     OverlapOrdering::Greater => {
-                        // println!("{:?} is greater than root, right now", interval);
                         let mut right = Self::from_node(root_mut.right.clone());
                         right.add(interval, value);
                         root_mut.right = right.inner;
@@ -84,6 +86,8 @@ where
                     | OverlapOrdering::OverlapEqualGreater => {
                         let mut center = Self::from_node(root_mut.center.clone());
                         center.add(interval, value);
+                        root_mut.info.full_interval = root_mut.info.full_interval.clone()
+                            + center.inner.clone().unwrap().borrow().info.interval.clone();
                         root_mut.center = center.inner;
                     }
                     OverlapOrdering::SuperSet => {}
@@ -171,7 +175,10 @@ where
 }
 
 #[allow(unused)]
-impl<I, V> CenteredIntervalTree<I, V> {
+impl<I, V> CenteredIntervalTree<I, V>
+where
+    I: std::fmt::Debug,
+{
     pub fn iter(&self) -> CenTreeNodeIterator<I, V> {
         let mut stack = Vec::new();
 

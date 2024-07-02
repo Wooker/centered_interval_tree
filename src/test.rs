@@ -113,3 +113,17 @@ fn add_right_with_overlays() {
     let right_cit = CenteredIntervalTree::from_node(root.inner.unwrap().borrow().right.clone());
     assert_eq!(right_cit.overlaps(), 0);
 }
+
+#[test]
+fn full_interval() {
+    let mut root: CenteredIntervalTree<i32, ()> = CenteredIntervalTree::new();
+    root.add(interval!([5, 9]), ());
+    root.add(interval!([1, 6]), ());
+    root.add(interval!([-100, 5]), ());
+    root.add(interval!([8, 15]), ());
+
+    assert_eq!(
+        root.inner.unwrap().borrow().info.full_interval,
+        interval!([-100, 15])
+    );
+}
