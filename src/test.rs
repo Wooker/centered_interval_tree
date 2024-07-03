@@ -64,19 +64,19 @@ fn add_right_1() {
 
 #[test]
 fn add_center_1() {
-    let mut root: CenteredIntervalTree<i32, ()> = CenteredIntervalTree::new();
-    root.add(interval!([0, 9]), ());
-    root.add(interval!([5, 6]), ());
+    let mut root: CenteredIntervalTree<i32, usize> = CenteredIntervalTree::new();
+    root.add(interval!([0, 9]), 1);
+    root.add(interval!([5, 6]), 2);
 
     assert_eq!(root.height(), 2);
     assert_eq!(root.overlaps(), 1);
     assert_eq!(
         root.link,
         node!(
-            (),
+            1,
             interval!([0, 9]),
             None,
-            node!((), interval!([5, 6]), None, None, None),
+            node!(2, interval!([5, 6]), None, None, None),
             None
         )
     );
