@@ -34,9 +34,7 @@ where
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
             "{}, {}, {}\n",
-            self.value(),
-            self.interval,
-            self.full_interval()
+            self.value, self.interval, self.full_interval
         ))
     }
 }

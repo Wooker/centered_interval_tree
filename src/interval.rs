@@ -147,8 +147,8 @@ where
     type Output = Self;
 
     fn add(self, rhs: Interval<I>) -> Self::Output {
-        println!("{}", self);
-        println!("{}", rhs);
+        print!("{} + ", self);
+        print!("{} = ", rhs);
 
         let start = (self.start > rhs.start)
             .then(|| rhs.start)
@@ -160,7 +160,7 @@ where
             .unwrap();
 
         let int = interval!([start, end]);
-        dbg!(&int);
+        println!("{}", int);
         int
     }
 }

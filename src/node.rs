@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::fmt::Display;
 use std::rc::Rc;
@@ -43,6 +42,6 @@ where
     V: Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("({})", self.info,))
+        f.write_fmt(format_args!("({})", self.info))
     }
 }

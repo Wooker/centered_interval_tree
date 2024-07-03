@@ -35,7 +35,7 @@ where
 impl<I, V> CenteredIntervalTree<I, V>
 where
     I: PartialOrd + Clone + std::fmt::Debug,
-    V: Clone,
+    V: Clone + std::fmt::Debug,
 {
     pub fn new() -> Self {
         Self { link: None }
@@ -49,9 +49,15 @@ where
     }
 
     pub fn add(&mut self, interval: Interval<I>, value: V) {
+        println!("Adding {}, {:?}", interval, value);
         if let Some(root) = self.link.take() {
-            match interval.compared_to(root.clone().borrow().info.interval()) {
+            match interval.compared_to(&root.clone().borrow().info.interval) {
                 OverlapOrdering::SubSet => {
+                    println!(
+                        "\t{} is subset of {}",
+                        interval,
+                        root.clone().borrow().info.interval,
+                    );
                     self.link = node!(value.clone(), interval.clone(), None, Some(root), None);
                     return;
                 }
@@ -63,17 +69,21 @@ where
 
         match &self.link {
             None => {
+                println!("\tRoot is None, creating root");
                 self.link = node!(value, interval, None, None, None);
             }
             Some(root) => {
+                println!("Updating root");
                 let mut root_mut = root.borrow_mut();
                 match root_mut.info.interval().compared_to(&interval) {
                     OverlapOrdering::Less => {
+                        println!("\tAdding left {}", interval);
                         let mut left = Self::from_node(root_mut.left.clone());
                         left.add(interval, value);
                         root_mut.left = left.link;
                     }
                     OverlapOrdering::Greater => {
+                        println!("\tAdding right {}", interval);
                         let mut right = Self::from_node(root_mut.right.clone());
                         right.add(interval, value);
                         root_mut.right = right.link;
@@ -84,13 +94,31 @@ where
                     | OverlapOrdering::Equal
                     | OverlapOrdering::OverlapGreater
                     | OverlapOrdering::OverlapEqualGreater => {
+                        println!("\tAdding center {}", interval);
                         let mut center = Self::from_node(root_mut.center.clone());
                         center.add(interval, value);
                         root_mut.info.full_interval = root_mut.info.full_interval.clone()
-                            + center.link.clone().unwrap().borrow().info.interval.clone();
+                            + center
+                                .link
+                                .clone()
+                                .unwrap()
+                                .borrow()
+                                .info
+                                .full_interval
+                                .clone();
+                        println!(
+                            "root({:?}) {} + center({:?}) {} , root full_int: {}",
+                            root_mut.info.value,
+                            root_mut.info.interval,
+                            center.link.clone().unwrap().borrow().info.value,
+                            center.link.clone().unwrap().borrow().info.interval,
+                            root_mut.info.full_interval,
+                        );
                         root_mut.center = center.link;
                     }
-                    OverlapOrdering::SuperSet => {}
+                    OverlapOrdering::SuperSet => {
+                        println!("\tSuper set {}", interval);
+                    }
                     OverlapOrdering::NotPossible => panic!("Intervals are not defined"),
                 }
             }

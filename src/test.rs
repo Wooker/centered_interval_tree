@@ -84,29 +84,29 @@ fn add_center_1() {
 
 #[test]
 fn add_right_with_overlays() {
-    let mut root: CenteredIntervalTree<i32, ()> = CenteredIntervalTree::new();
-    root.add(interval!([0, 9]), ());
-    root.add(interval!([5, 13]), ());
-    root.add(interval!([8, 18]), ());
+    let mut root: CenteredIntervalTree<i32, usize> = CenteredIntervalTree::new();
+    root.add(interval!([0, 9]), 1);
+    root.add(interval!([5, 13]), 2);
+    root.add(interval!([8, 18]), 3);
 
-    root.add(interval!([10, 15]), ());
+    root.add(interval!([10, 15]), 4);
 
     assert_eq!(root.height(), 3);
     assert_eq!(root.overlaps(), 2);
     assert_eq!(
         root.link,
         node!(
-            (),
+            1,
             interval!([0, 9]),
             None,
             node!(
-                (),
+                2,
                 interval!([5, 13]),
                 None,
-                node!((), interval!([8, 18]), None, None, None),
+                node!(3, interval!([8, 18]), None, None, None),
                 None
             ),
-            node!((), interval!([10, 15]), None, None, None)
+            node!(4, interval!([10, 15]), None, None, None)
         )
     );
 
@@ -115,15 +115,57 @@ fn add_right_with_overlays() {
 }
 
 #[test]
-fn full_interval() {
-    let mut root: CenteredIntervalTree<i32, ()> = CenteredIntervalTree::new();
-    root.add(interval!([5, 9]), ());
-    root.add(interval!([1, 6]), ());
-    root.add(interval!([-100, 5]), ());
-    root.add(interval!([8, 15]), ());
+fn full_interval_add_up() {
+    let mut root: CenteredIntervalTree<i32, usize> = CenteredIntervalTree::new();
+    root.add(interval!([1, 6]), 1);
+    root.add(interval!([2, 7]), 2);
+    root.add(interval!([3, 8]), 3);
+    root.add(interval!([4, 9]), 4);
 
     assert_eq!(
         root.link.unwrap().borrow().info.full_interval,
-        interval!([-100, 15])
+        interval!([1, 9])
+    );
+}
+
+#[test]
+fn full_interval_add_down() {
+    let mut root: CenteredIntervalTree<i32, usize> = CenteredIntervalTree::new();
+    root.add(interval!([1, 6]), 1);
+    root.add(interval!([2, 7]), 2);
+    root.add(interval!([3, 8]), 3);
+    root.add(interval!([4, 9]), 4);
+
+    assert_eq!(
+        root.link.unwrap().borrow().info.full_interval,
+        interval!([1, 9])
+    );
+}
+
+#[test]
+fn full_interval_add_outside_inside() {
+    let mut root: CenteredIntervalTree<i32, usize> = CenteredIntervalTree::new();
+    root.add(interval!([4, 6]), 1);
+    root.add(interval!([3, 7]), 2);
+    root.add(interval!([2, 8]), 3);
+    root.add(interval!([1, 9]), 4);
+
+    assert_eq!(
+        root.link.unwrap().borrow().info.full_interval,
+        interval!([4, 6])
+    );
+}
+
+#[test]
+fn full_interval_add_inside_outside() {
+    let mut root: CenteredIntervalTree<i32, usize> = CenteredIntervalTree::new();
+    root.add(interval!([4, 6]), 1);
+    root.add(interval!([3, 7]), 2);
+    root.add(interval!([2, 8]), 3);
+    root.add(interval!([1, 9]), 4);
+
+    assert_eq!(
+        root.link.unwrap().borrow().info.full_interval,
+        interval!([1, 9])
     );
 }
