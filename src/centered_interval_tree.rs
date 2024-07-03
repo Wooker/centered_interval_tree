@@ -28,7 +28,7 @@ pub struct CenteredIntervalTree<I, V>
 where
     I: std::fmt::Debug,
 {
-    pub inner: Link<I, V>,
+    pub link: Link<I, V>,
 }
 
 #[allow(unused)]
@@ -38,32 +38,32 @@ where
     V: Clone,
 {
     pub fn new() -> Self {
-        Self { inner: None }
+        Self { link: None }
     }
 
     pub fn from_node(node: Link<I, V>) -> Self {
         match node {
-            None => Self { inner: None },
-            Some(n) => Self { inner: Some(n) },
+            None => Self { link: None },
+            Some(n) => Self { link: Some(n) },
         }
     }
 
     pub fn add(&mut self, interval: Interval<I>, value: V) {
-        if let Some(root) = self.inner.take() {
+        if let Some(root) = self.link.take() {
             match interval.compared_to(root.clone().borrow().info.interval()) {
                 OverlapOrdering::SubSet => {
-                    self.inner = node!(value.clone(), interval.clone(), None, Some(root), None);
+                    self.link = node!(value.clone(), interval.clone(), None, Some(root), None);
                     return;
                 }
                 _ => {
-                    self.inner = Some(root);
+                    self.link = Some(root);
                 }
             };
         }
 
-        match &self.inner {
+        match &self.link {
             None => {
-                self.inner = node!(value, interval, None, None, None);
+                self.link = node!(value, interval, None, None, None);
             }
             Some(root) => {
                 let mut root_mut = root.borrow_mut();
@@ -71,12 +71,12 @@ where
                     OverlapOrdering::Less => {
                         let mut left = Self::from_node(root_mut.left.clone());
                         left.add(interval, value);
-                        root_mut.left = left.inner;
+                        root_mut.left = left.link;
                     }
                     OverlapOrdering::Greater => {
                         let mut right = Self::from_node(root_mut.right.clone());
                         right.add(interval, value);
-                        root_mut.right = right.inner;
+                        root_mut.right = right.link;
                     }
                     OverlapOrdering::SubSet
                     | OverlapOrdering::OverlapLess
@@ -87,8 +87,8 @@ where
                         let mut center = Self::from_node(root_mut.center.clone());
                         center.add(interval, value);
                         root_mut.info.full_interval = root_mut.info.full_interval.clone()
-                            + center.inner.clone().unwrap().borrow().info.interval.clone();
-                        root_mut.center = center.inner;
+                            + center.link.clone().unwrap().borrow().info.interval.clone();
+                        root_mut.center = center.link;
                     }
                     OverlapOrdering::SuperSet => {}
                     OverlapOrdering::NotPossible => panic!("Intervals are not defined"),
@@ -102,7 +102,7 @@ where
     }
 
     pub fn height(&self) -> usize {
-        match &self.inner {
+        match &self.link {
             None => 0,
             Some(root) => {
                 let left = Self::from_node(root.borrow_mut().left.clone());
@@ -119,7 +119,7 @@ where
     }
 
     pub fn overlaps(&self) -> usize {
-        match &self.inner {
+        match &self.link {
             None => 0,
             Some(root) => {
                 let inner_left = Self::from_node(root.borrow().left.clone());
@@ -144,7 +144,7 @@ where
     }
 
     pub fn search(&self, point: I) -> Vec<InnerInfo<I, V>> {
-        match &self.inner {
+        match &self.link {
             None => vec![],
             Some(root) => match root.borrow().info.interval.compare_point(&point) {
                 _ => vec![],
@@ -182,7 +182,7 @@ where
     pub fn iter(&self) -> CenTreeNodeIterator<I, V> {
         let mut stack = Vec::new();
 
-        if let Some(root) = self.inner.as_ref() {
+        if let Some(root) = self.link.as_ref() {
             stack.push((Some(Rc::clone(root)), 0, false));
         }
 

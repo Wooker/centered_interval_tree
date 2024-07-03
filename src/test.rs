@@ -8,7 +8,7 @@ use super::CenteredIntervalTree;
 fn create_empty() {
     let root: CenteredIntervalTree<i32, ()> = CenteredIntervalTree::new();
 
-    assert_eq!(root.inner, None);
+    assert_eq!(root.link, None);
     assert_eq!(root.height(), 0);
 }
 
@@ -19,7 +19,7 @@ fn add_root_0() {
 
     assert_eq!(root.height(), 1);
     assert_eq!(root.overlaps(), 0);
-    assert_eq!(root.inner, node!((), interval!([0, 9]), None, None, None));
+    assert_eq!(root.link, node!((), interval!([0, 9]), None, None, None));
 }
 
 #[test]
@@ -31,7 +31,7 @@ fn add_left_1() {
     assert_eq!(root.height(), 2);
     assert_eq!(root.overlaps(), 0);
     assert_eq!(
-        root.inner,
+        root.link,
         node!(
             (),
             interval!([5, 9]),
@@ -51,7 +51,7 @@ fn add_right_1() {
     assert_eq!(root.height(), 2);
     assert_eq!(root.overlaps(), 0);
     assert_eq!(
-        root.inner,
+        root.link,
         node!(
             (),
             interval!([0, 4]),
@@ -71,7 +71,7 @@ fn add_center_1() {
     assert_eq!(root.height(), 2);
     assert_eq!(root.overlaps(), 1);
     assert_eq!(
-        root.inner,
+        root.link,
         node!(
             (),
             interval!([0, 9]),
@@ -94,7 +94,7 @@ fn add_right_with_overlays() {
     assert_eq!(root.height(), 3);
     assert_eq!(root.overlaps(), 2);
     assert_eq!(
-        root.inner,
+        root.link,
         node!(
             (),
             interval!([0, 9]),
@@ -110,7 +110,7 @@ fn add_right_with_overlays() {
         )
     );
 
-    let right_cit = CenteredIntervalTree::from_node(root.inner.unwrap().borrow().right.clone());
+    let right_cit = CenteredIntervalTree::from_node(root.link.unwrap().borrow().right.clone());
     assert_eq!(right_cit.overlaps(), 0);
 }
 
@@ -123,7 +123,7 @@ fn full_interval() {
     root.add(interval!([8, 15]), ());
 
     assert_eq!(
-        root.inner.unwrap().borrow().info.full_interval,
+        root.link.unwrap().borrow().info.full_interval,
         interval!([-100, 15])
     );
 }
