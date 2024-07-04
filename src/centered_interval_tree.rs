@@ -8,11 +8,11 @@ use crate::{
 };
 
 macro_rules! node {
-    ($val:expr, $int:expr, $left:expr, $center:expr, $right:expr) => {{
+    ($val:expr, $int:expr, $full_int:expr, $left:expr, $center:expr, $right:expr) => {{
         Some(Rc::new(RefCell::new(Node {
             info: InnerInfo {
                 value: $val,
-                full_interval: $int.clone(),
+                full_interval: $full_int,
                 interval: $int,
             },
             left: $left,
@@ -54,13 +54,16 @@ where
             let mut root_mut = root.borrow_mut();
             match root_mut.info.interval().compared_to(&interval) {
                 OverlapOrdering::SuperSet => {
-                    println!(
-                        "\t{} is super of {}",
-                        interval,
-                        root.clone().borrow().info.interval,
-                    );
+                    println!("\t{} is super of {}", interval, root_mut.info.interval,);
                     let new_root = Rc::new(RefCell::new(root_mut.deref().to_owned()));
-                    self.link = node!(value.clone(), interval.clone(), None, Some(new_root), None);
+                    self.link = node!(
+                        value.clone(),
+                        interval.clone(),
+                        interval.clone(),
+                        None,
+                        Some(new_root),
+                        None
+                    );
                 }
                 OverlapOrdering::Less => {
                     println!("\tAdding left {}", interval);
@@ -121,7 +124,7 @@ where
             };
         } else {
             println!("\tRoot is None, creating root");
-            self.link = node!(value, interval, None, None, None);
+            self.link = node!(value, interval, interval.clone(), None, None, None);
             return;
         }
     }

@@ -19,7 +19,10 @@ fn add_root_0() {
 
     assert_eq!(root.height(), 1);
     assert_eq!(root.overlaps(), 0);
-    assert_eq!(root.link, node!((), interval!([0, 9]), None, None, None));
+    assert_eq!(
+        root.link,
+        node!((), interval!([0, 9]), interval!([0, 9]), None, None, None)
+    );
 }
 
 #[test]
@@ -35,7 +38,8 @@ fn add_left_1() {
         node!(
             (),
             interval!([5, 9]),
-            node!((), interval!([0, 4]), None, None, None),
+            interval!([5, 9]),
+            node!((), interval!([0, 4]), interval!([0, 4]), None, None, None),
             None,
             None
         )
@@ -55,9 +59,10 @@ fn add_right_1() {
         node!(
             (),
             interval!([0, 4]),
+            interval!([0, 4]),
             None,
             None,
-            node!((), interval!([5, 9]), None, None, None)
+            node!((), interval!([5, 9]), interval!([5, 9]), None, None, None)
         )
     );
 }
@@ -75,8 +80,9 @@ fn add_center_1() {
         node!(
             1,
             interval!([0, 9]),
+            interval!([0, 9]),
             None,
-            node!(2, interval!([5, 6]), None, None, None),
+            node!(2, interval!([5, 6]), interval!([5, 6]), None, None, None),
             None
         )
     );
@@ -98,15 +104,24 @@ fn add_right_with_overlays() {
         node!(
             1,
             interval!([0, 9]),
+            interval!([0, 18]),
             None,
             node!(
                 2,
                 interval!([5, 13]),
+                interval!([5, 18]),
                 None,
-                node!(3, interval!([8, 18]), None, None, None),
+                node!(3, interval!([8, 18]), interval!([8, 18]), None, None, None),
                 None
             ),
-            node!(4, interval!([10, 15]), None, None, None)
+            node!(
+                4,
+                interval!([10, 15]),
+                interval!([10, 15]),
+                None,
+                None,
+                None
+            )
         )
     );
 
@@ -145,14 +160,14 @@ fn full_interval_add_down() {
 #[test]
 fn full_interval_add_outside_inside() {
     let mut root: CenteredIntervalTree<i32, usize> = CenteredIntervalTree::new();
-    root.add(interval!([4, 6]), 1);
-    root.add(interval!([3, 7]), 2);
-    root.add(interval!([2, 8]), 3);
-    root.add(interval!([1, 9]), 4);
+    root.add(interval!([1, 9]), 1);
+    root.add(interval!([2, 8]), 2);
+    root.add(interval!([3, 7]), 3);
+    root.add(interval!([4, 6]), 4);
 
     assert_eq!(
         root.link.unwrap().borrow().info.full_interval,
-        interval!([4, 6])
+        interval!([1, 9])
     );
 }
 
