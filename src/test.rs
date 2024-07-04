@@ -47,6 +47,42 @@ fn add_left_1() {
 }
 
 #[test]
+fn add_left_2() {
+    let mut root: CenteredIntervalTree<i32, usize> = CenteredIntervalTree::new();
+    root.add(interval!([5, 9]), 1);
+    root.add(interval!([8, 15]), 2);
+    root.add(interval!([11, 12]), 3);
+
+    assert_eq!(root.height(), 3);
+    assert_eq!(root.overlaps(), 2);
+    assert_eq!(
+        root.link,
+        node!(
+            1,
+            interval!([5, 9]),
+            interval!([5, 15]),
+            None,
+            node!(
+                2,
+                interval!([8, 15]),
+                interval!([8, 15]),
+                None,
+                node!(
+                    3,
+                    interval!([11, 12]),
+                    interval!([11, 12]),
+                    None,
+                    None,
+                    None
+                ),
+                None
+            ),
+            None
+        )
+    );
+}
+
+#[test]
 fn add_right_1() {
     let mut root: CenteredIntervalTree<i32, ()> = CenteredIntervalTree::new();
     root.add(interval!([0, 4]), ());
@@ -97,8 +133,8 @@ fn add_right_with_overlays() {
 
     root.add(interval!([10, 15]), 4);
 
-    assert_eq!(root.height(), 3);
-    assert_eq!(root.overlaps(), 2);
+    assert_eq!(root.height(), 4);
+    assert_eq!(root.overlaps(), 3);
     assert_eq!(
         root.link,
         node!(
@@ -111,17 +147,24 @@ fn add_right_with_overlays() {
                 interval!([5, 13]),
                 interval!([5, 18]),
                 None,
-                node!(3, interval!([8, 18]), interval!([8, 18]), None, None, None),
+                node!(
+                    3,
+                    interval!([8, 18]),
+                    interval!([8, 18]),
+                    None,
+                    node!(
+                        4,
+                        interval!([10, 15]),
+                        interval!([10, 15]),
+                        None,
+                        None,
+                        None
+                    ),
+                    None
+                ),
                 None
             ),
-            node!(
-                4,
-                interval!([10, 15]),
-                interval!([10, 15]),
-                None,
-                None,
-                None
-            )
+            None
         )
     );
 

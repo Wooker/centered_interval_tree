@@ -49,12 +49,10 @@ where
     }
 
     pub fn add(&mut self, interval: Interval<I>, value: V) {
-        println!("Adding {}, {:?}", interval, value);
         if let Some(root) = self.link.take() {
             let mut root_mut = root.borrow_mut();
-            match root_mut.info.interval().compared_to(&interval) {
+            match root_mut.info.full_interval.compared_to(&interval) {
                 OverlapOrdering::SuperSet => {
-                    println!("\t{} is super of {}", interval, root_mut.info.interval,);
                     let new_root = Rc::new(RefCell::new(root_mut.deref().to_owned()));
                     self.link = node!(
                         value.clone(),
@@ -64,9 +62,12 @@ where
                         Some(new_root),
                         None
                     );
+                    return;
                 }
                 OverlapOrdering::Less => {
-                    println!("\tAdding left {}", interval);
+                    // TODO: check full_interval of the root
+                    // if it's still less, then add to left
+                    // else add to center
                     let mut left = Self::from_node(root_mut.left.clone());
                     left.add(interval, value);
                     root_mut.left = left.link;
@@ -75,13 +76,21 @@ where
                     self.link = Some(new_root);
                 }
                 OverlapOrdering::Greater => {
-                    println!("\tAdding right {}", interval);
-                    let mut right = Self::from_node(root_mut.right.clone());
-                    right.add(interval, value);
-                    root_mut.right = right.link;
+                    // TODO: check full_interval of the root
+                    // if it's still less, then add to right
+                    // else add to center
+                    if root_mut.info.full_interval.compared_to(&interval)
+                        == OverlapOrdering::Greater
+                    {
+                        let mut right = Self::from_node(root_mut.right.clone());
+                        right.add(interval, value);
+                        root_mut.right = right.link;
 
-                    let new_root = Rc::new(RefCell::new(root_mut.deref().to_owned()));
-                    self.link = Some(new_root);
+                        let new_root = Rc::new(RefCell::new(root_mut.deref().to_owned()));
+                        self.link = Some(new_root);
+                        return;
+                    } else {
+                    }
                 }
                 OverlapOrdering::SubSet
                 | OverlapOrdering::OverlapLess
@@ -89,41 +98,26 @@ where
                 | OverlapOrdering::Equal
                 | OverlapOrdering::OverlapGreater
                 | OverlapOrdering::OverlapEqualGreater => {
-                    println!("\tAdding center {}", interval);
                     let mut center = Self::from_node(root_mut.center.clone());
                     center.add(interval, value);
-                    root_mut.info.full_interval = root_mut.info.full_interval.clone()
-                        + center
-                            .link
-                            .clone()
-                            .unwrap()
-                            .borrow()
-                            .info
-                            .full_interval
-                            .clone();
-                    println!(
-                        "root({:?}) {} + center({:?}) {} , root full_int: {}",
-                        root_mut.info.value,
-                        root_mut.info.interval,
-                        center.link.clone().unwrap().borrow().info.value,
-                        center.link.clone().unwrap().borrow().info.interval,
-                        root_mut.info.full_interval,
-                    );
+
+                    let center_full_interval = center
+                        .link
+                        .clone()
+                        .unwrap()
+                        .borrow()
+                        .info
+                        .full_interval
+                        .clone();
+                    root_mut.info.full_interval =
+                        root_mut.info.full_interval.clone() + center_full_interval;
+
                     root_mut.center = center.link;
-                    let new_root = Rc::new(RefCell::new(root_mut.deref().to_owned()));
-                    self.link = Some(new_root);
-                }
-                OverlapOrdering::SuperSet => {
-                    println!("\tSuper set {}", interval);
-                }
-                OverlapOrdering::NotPossible => panic!("Intervals are not defined"),
-                _ => {
                     let new_root = Rc::new(RefCell::new(root_mut.deref().to_owned()));
                     self.link = Some(new_root);
                 }
             };
         } else {
-            println!("\tRoot is None, creating root");
             self.link = node!(value, interval, interval.clone(), None, None, None);
             return;
         }

@@ -16,9 +16,9 @@ where
     type Item = (InnerInfo<I, V>, usize, bool);
 
     fn next(&mut self) -> Option<Self::Item> {
-        println!("Iterating...");
+        // println!("Iterating...");
         while let Some((node, layer, mut has_overlaps)) = self.stack.pop() {
-            println!("Node {:?}", node.clone().unwrap().borrow().info);
+            // println!("Node {:?}", node.clone().unwrap().borrow().info);
             let info = node.as_ref().unwrap().borrow().info.clone();
 
             if let Some(right) = node.as_ref().unwrap().borrow().right.as_ref() {
@@ -35,7 +35,7 @@ where
 
             return Some((info, layer, has_overlaps));
         }
-        println!("Done iterating.");
+        // println!("Done iterating.");
 
         None
     }

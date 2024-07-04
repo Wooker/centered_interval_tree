@@ -1,6 +1,6 @@
 use std::{fmt::Display, ops::Add};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum OverlapOrdering {
     SuperSet,            // [1, 4] in relation to [2, 3]
     SubSet,              // [2, 3] in relation to [1, 4]
@@ -11,7 +11,6 @@ pub enum OverlapOrdering {
     OverlapGreater,      // [2, 4] in relation to [1, 3]
     OverlapEqualGreater, // [3, 4] in relation to [1, 3]
     Equal,               // [1, 2] [1, 2]
-    NotPossible,
 }
 
 #[allow(unused)]
@@ -61,9 +60,6 @@ where
             self.start.partial_cmp(&other.end),
             self.end.partial_cmp(&other.start),
         ) {
-            (None, None) => OverlapOrdering::NotPossible,
-            (None, Some(_)) => OverlapOrdering::NotPossible,
-            (Some(_), None) => OverlapOrdering::NotPossible,
             (Some(se), Some(es)) => {
                 match (se, es) {
                     (std::cmp::Ordering::Less, std::cmp::Ordering::Less) => {
@@ -87,9 +83,6 @@ where
                             self.start.partial_cmp(&other.start),
                             self.end.partial_cmp(&other.end),
                         ) {
-                            (None, None) => OverlapOrdering::NotPossible,
-                            (None, Some(_)) => OverlapOrdering::NotPossible,
-                            (Some(_), None) => OverlapOrdering::NotPossible,
                             (Some(ss), Some(ee)) => match (ss, ee) {
                                 (std::cmp::Ordering::Less, std::cmp::Ordering::Equal) => {
                                     OverlapOrdering::SuperSet
@@ -119,14 +112,13 @@ where
                                     OverlapOrdering::OverlapGreater
                                 }
                             },
+                            _ => panic!("Undefined ordering"),
                         }
                     }
-                    _ => {
-                        println!("Not possible");
-                        OverlapOrdering::NotPossible
-                    }
+                    _ => panic!("Undefined ordering"),
                 }
             }
+            _ => panic!("Undefined ordering"),
         };
 
         ordering
@@ -135,7 +127,7 @@ where
     pub fn compare_point(&self, other: &I) -> OverlapOrdering {
         match self.start.partial_cmp(&other) {
             Some(_) => todo!(),
-            None => OverlapOrdering::NotPossible,
+            _ => todo!(),
         }
     }
 }
@@ -147,8 +139,8 @@ where
     type Output = Self;
 
     fn add(self, rhs: Interval<I>) -> Self::Output {
-        print!("{} + ", self);
-        print!("{} = ", rhs);
+        // print!("{} + ", self);
+        // print!("{} = ", rhs);
 
         let start = (self.start > rhs.start)
             .then(|| rhs.start)
@@ -160,7 +152,7 @@ where
             .unwrap();
 
         let int = interval!([start, end]);
-        println!("{}", int);
+        // println!("{}", int);
         int
     }
 }
