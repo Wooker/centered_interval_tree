@@ -7,6 +7,7 @@ pub struct InnerInfo<I: std::fmt::Debug, V> {
     pub(crate) value: V,
     pub(crate) interval: Interval<I>,
     pub(crate) full_interval: Interval<I>,
+    pub(crate) layers: Interval<usize>,
 }
 
 impl<I, V> InnerInfo<I, V>

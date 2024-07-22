@@ -8,12 +8,13 @@ use crate::{
 };
 
 macro_rules! node {
-    ($val:expr, $int:expr, $full_int:expr, $left:expr, $center:expr, $right:expr) => {{
+    ($val:expr, $int:expr, $full_int:expr, $layers:expr, $left:expr, $center:expr, $right:expr) => {{
         Some(Rc::new(RefCell::new(Node {
             info: InnerInfo {
                 value: $val,
                 full_interval: $full_int,
                 interval: $int,
+                layers: $layers,
             },
             left: $left,
             center: $center,
@@ -90,6 +91,7 @@ where
                         self.link = Some(new_root);
                         return;
                     } else {
+                        // TODO: add to the right but check the boundary of the layer
                     }
                 }
                 OverlapOrdering::SubSet
